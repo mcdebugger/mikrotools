@@ -30,8 +30,6 @@ def execute_hosts_commands(hosts):
         ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy)        
         # Connecting to host
         ssh.connect(host, username=user, key_filename=keyfile, port=port, disabled_algorithms={'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']})
-        # Invoking shell
-        #shell = ssh.invoke_shell()
         
         # Executing commands
         for command in commands:
