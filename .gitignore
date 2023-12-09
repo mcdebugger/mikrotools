@@ -22,3 +22,6 @@ venv.bak/
 # Logs
 *.log
 *.json
+
+# Emacs file backups
+*~
