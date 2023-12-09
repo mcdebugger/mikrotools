@@ -44,8 +44,24 @@ def get_commands_from_file(filename):
     with open(filename) as commands_file:
         commands = [command.rstrip() for command in commands_file]
         return commands
-        
-def get_hosts_from_file(filename):
+
+def get_hosts():
+    # Parsing arguments provided on script execution
+    args = parse_args()
+
+    if args.host:
+        hosts = [args.host]
+    elif args.hosts_file:
+        hosts = read_hosts_from_file(args.hosts_file)
+    else:
+        # Getting config from YAML file
+        cfg = load_cfg_from_file('settings.yml')
+        hostsfile = cfg['HostsFile']
+        hosts = read_hosts_from_file(hostsfile)
+    
+    return hosts
+   
+def read_hosts_from_file(filename):
     with open(filename) as hostsfile:
         hosts = [host.rstrip() for host in hostsfile]
         return hosts
@@ -65,18 +81,7 @@ def parse_args():
     return args
     
 def main():
-    # Parsing arguments provided on script execution
-    args = parse_args()
-
-    if args.host:
-        hosts = [args.host]
-    elif args.hosts_file:
-        hosts = get_hosts_from_file(args.hosts_file)
-    else:
-        # Getting config from YAML file
-        cfg = load_cfg_from_file('settings.yml')
-        hostsfile = cfg['HostsFile']
-        hosts = get_hosts_from_file(hostsfile)
+    hosts = get_hosts()
 
     # Executing commands for each host in list
     execute_hosts_commands(hosts)
