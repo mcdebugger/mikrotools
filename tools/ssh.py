@@ -1,7 +1,7 @@
 import paramiko
 
 from tools.colors import fcolors_256 as fcolors
-from tools.config import get_commands, load_cfg_from_file
+from tools.config import get_commands, get_config
 
 class HostCommandsExecutor():
     def __init__(self, host):
@@ -9,7 +9,7 @@ class HostCommandsExecutor():
         self.command = None
         
         # Loading configuration from file
-        cfg = load_cfg_from_file('settings.yml')
+        cfg = get_config()
         
         # Setting variables from configuration file
         user = cfg['User']
@@ -38,7 +38,8 @@ class HostCommandsExecutor():
     
     def __close_connection(self):
         # Closing SSH connection
-        self.ssh.close()
+        if self.ssh:
+            self.ssh.close()
 
 def execute_hosts_commands(hosts):
     # Getting command from arguments or config file

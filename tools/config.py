@@ -22,6 +22,19 @@ def get_commands_from_file(filename):
         commands = [command.rstrip() for command in commands_file]
         return commands
 
+def get_config():
+    args = parse_args()
+    
+    if args.settings_file:
+        filename = args.settings_file
+    else:
+        filename = 'settings.yml'
+    
+    # Getting config from YAML file
+    cfg = load_cfg_from_file(filename)
+    
+    return cfg
+
 def get_hosts():
     # Parsing arguments provided on script execution
     args = parse_args()

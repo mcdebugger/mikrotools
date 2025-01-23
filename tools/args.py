@@ -6,5 +6,6 @@ def parse_args():
     parser.add_argument('-cf', '--commands-file')
     parser.add_argument('-H', '--host')
     parser.add_argument('-hf', '--hosts-file')
+    parser.add_argument('-sf', '--settings-file')
     args = parser.parse_args()
     return args
