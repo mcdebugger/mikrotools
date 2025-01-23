@@ -27,7 +27,7 @@ class HostCommandsExecutor():
     def execute_command(self, command):
         stdin, stdout, stderr = self.ssh.exec_command(command)
         
-        return stdout.read().decode()
+        return stdout.read().decode().strip()
     
     def __setup_connection(self, host, user, keyfile, port):
         # Setting up SSH client
@@ -55,7 +55,7 @@ def execute_hosts_commands(hosts):
         
         # Executing commands
         for command in commands:
-            print(f'{fcolors.bold}{fcolors.darkgray}Executing command: {command}{fcolors.default}')
+            print(f'\n{fcolors.bold}{fcolors.darkgray}Executing command: {command}{fcolors.default}')
             result = executor.execute_command(command)
             # Printing execution result
             print(result)
