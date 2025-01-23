@@ -20,4 +20,6 @@ class fcolors_256:
     cyan = '\033[38;5;6m'
     gray = '\033[38;5;7m'
     bold = '\033[1m'
+    lightblue = '\033[38;5;111m'
+    lightpurple = '\033[38;5;141m'
     underline = '\033[4m'
