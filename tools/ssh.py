@@ -46,6 +46,8 @@ def execute_hosts_commands(hosts):
     commands = get_commands()
 
     for host in hosts:
+        # Printing separator
+        print(f'{fcolors.bold}{fcolors.lightblue}{"-"*30}{fcolors.default}')
         print(f'{fcolors.bold}{fcolors.lightblue}Working with host: {fcolors.lightpurple}{host}{fcolors.default}')
         
         executor = HostCommandsExecutor(host)
@@ -59,5 +61,6 @@ def execute_hosts_commands(hosts):
             result = executor.execute_command(command)
             # Printing execution result
             print(result)
-
+        
+        # Deleting executor
         del executor
