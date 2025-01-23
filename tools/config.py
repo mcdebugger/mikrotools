@@ -2,6 +2,21 @@ import yaml
 
 from tools.args import parse_args
 
+def get_commands():
+    # Parsing arguments provided on script execution
+    args = parse_args()
+
+    if args.command:
+        commands = [args.command]
+    elif args.commands_file:
+        commands = get_commands_from_file(args.commands_file)
+    else:
+        # Getting config from YAML file
+        cfg = load_cfg_from_file('settings.yml')
+        commands = [cfg['Command']]
+    
+    return commands
+
 def get_commands_from_file(filename):
     with open(filename) as commands_file:
         commands = [command.rstrip() for command in commands_file]
