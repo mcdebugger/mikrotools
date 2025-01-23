@@ -55,7 +55,7 @@ def execute_hosts_commands(hosts):
         
         # Executing commands
         for command in commands:
-            print(f'{fcolors.bold}{fcolors.gray}Executing command: {command}{fcolors.default}')
+            print(f'{fcolors.bold}{fcolors.darkgray}Executing command: {command}{fcolors.default}')
             result = executor.execute_command(command)
             # Printing execution result
             print(result)
