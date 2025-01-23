@@ -1,6 +1,5 @@
 import paramiko
 
-from tools.args import parse_args
 from tools.colors import fcolors_256 as fcolors
 from tools.config import get_commands, load_cfg_from_file
 
