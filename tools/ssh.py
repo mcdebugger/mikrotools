@@ -1,6 +1,7 @@
 import paramiko
 
 from tools.args import parse_args
+from tools.colors import fcolors
 from tools.config import get_commands_from_file, load_cfg_from_file
 
 def execute_hosts_commands(hosts):
@@ -23,7 +24,7 @@ def execute_hosts_commands(hosts):
         commands = [cfg['Command']]
 
     for host in hosts:
-        print(f'Working with host: {host}')
+        print(f'{fcolors.bold}{fcolors.blue}Working with host: {fcolors.purple}{host}{fcolors.default}')
         
         # Setting up SSH client
         ssh = paramiko.SSHClient()
