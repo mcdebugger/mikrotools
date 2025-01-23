@@ -9,3 +9,15 @@ class fcolors:
     gray = '\033[90m'
     bold = '\033[1m'
     underline = '\033[4m'
+
+class fcolors_256:
+    default = '\033[0m'
+    red = '\033[38;5;1m'
+    green = '\033[38;5;2m'
+    yellow = '\033[38;5;3m'
+    blue = '\033[38;5;4m'
+    purple = '\033[38;5;5m'
+    cyan = '\033[38;5;6m'
+    gray = '\033[38;5;7m'
+    bold = '\033[1m'
+    underline = '\033[4m'
