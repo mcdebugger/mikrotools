@@ -6,13 +6,13 @@ def get_commands():
     # Parsing arguments provided on script execution
     args = parse_args()
 
-    if args.command:
-        commands = [args.command]
+    if args.execute_command:
+        commands = [args.execute_command]
     elif args.commands_file:
         commands = get_commands_from_file(args.commands_file)
     else:
         # Getting config from YAML file
-        cfg = load_cfg_from_file('settings.yml')
+        cfg = get_config()
         commands = [cfg['Command']]
     
     return commands
@@ -25,10 +25,10 @@ def get_commands_from_file(filename):
 def get_config():
     args = parse_args()
     
-    if args.settings_file:
-        filename = args.settings_file
+    if args.config_file:
+        filename = args.config_file
     else:
-        filename = 'settings.yml'
+        filename = 'settings.yaml'
     
     # Getting config from YAML file
     cfg = load_cfg_from_file(filename)
@@ -41,11 +41,11 @@ def get_hosts():
 
     if args.host:
         hosts = [args.host]
-    elif args.hosts_file:
-        hosts = read_hosts_from_file(args.hosts_file)
+    elif args.inventory_file:
+        hosts = read_hosts_from_file(args.inventory_file)
     else:
         # Getting config from YAML file
-        cfg = load_cfg_from_file('settings.yml')
+        cfg = get_config()
         hostsfile = cfg['HostsFile']
         hosts = read_hosts_from_file(hostsfile)
     
