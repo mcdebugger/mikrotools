@@ -1,15 +1,15 @@
+import click
 import yaml
 
 from tools.args import parse_args
 
 def get_commands():
-    # Parsing arguments provided on script execution
-    args = parse_args()
+    ctx = click.get_current_context()
 
-    if args.execute_command:
-        commands = [args.execute_command]
-    elif args.commands_file:
-        commands = get_commands_from_file(args.commands_file)
+    if ctx.params['execute_command']:
+        commands = [ctx.params['execute_command']]
+    elif ctx.params['commands_file']:
+        commands = get_commands_from_file(ctx.params['commands_file'])
     else:
         # Getting config from YAML file
         cfg = get_config()
@@ -23,10 +23,9 @@ def get_commands_from_file(filename):
         return commands
 
 def get_config():
-    args = parse_args()
-    
-    if args.config_file:
-        filename = args.config_file
+    ctx = click.get_current_context()
+    if ctx.params['config_file']:
+        filename = ctx.params['config_file']
     else:
         filename = 'settings.yaml'
     
@@ -36,13 +35,11 @@ def get_config():
     return cfg
 
 def get_hosts():
-    # Parsing arguments provided on script execution
-    args = parse_args()
-
-    if args.host:
-        hosts = [args.host]
-    elif args.inventory_file:
-        hosts = read_hosts_from_file(args.inventory_file)
+    ctx = click.get_current_context()
+    if ctx.params['host']:
+        hosts = [ctx.params['host']]
+    elif ctx.params['inventory_file']:
+        hosts = read_hosts_from_file(ctx.params['inventory_file'])
     else:
         # Getting config from YAML file
         cfg = get_config()
