@@ -1,7 +1,7 @@
 import paramiko
 
 from tools.colors import fcolors_256 as fcolors
-from tools.config import get_commands, get_config
+from tools.config import get_config
 
 class HostCommandsExecutor():
     def __init__(self, host):
@@ -41,9 +41,9 @@ class HostCommandsExecutor():
         if self.ssh:
             self.ssh.close()
 
-def execute_hosts_commands(hosts):
+def execute_hosts_commands(hosts, commands):
     # Getting command from arguments or config file
-    commands = get_commands()
+    # commands = get_commands()
 
     for host in hosts:
         # Printing separator
@@ -54,6 +54,8 @@ def execute_hosts_commands(hosts):
         
         identity = executor.execute_command(':put [/system identity get name]')
         print(f'{fcolors.bold}{fcolors.lightblue}Identity: {fcolors.lightpurple}{identity}{fcolors.default}')
+        installed_version = executor.execute_command(':put [/system package update get installed-version]')
+        print(f'{fcolors.bold}{fcolors.lightblue}Installed version: {fcolors.lightpurple}{installed_version}{fcolors.default}')
         
         # Executing commands
         for command in commands:
@@ -64,3 +66,42 @@ def execute_hosts_commands(hosts):
         
         # Deleting executor
         del executor
+
+def get_outdated_hosts(hosts, version):
+    """
+    Gets a list of hosts that do not have the specified or higher version installed.
+
+    Args:
+        hosts (list): A list of hostnames or IP addresses to check.
+        version (str): The version to compare against.
+
+    Returns:
+        list: A list of hosts that do not have the specified version installed.
+    """
+    outdated_hosts = []
+    for host in hosts:
+        if not check_against_version(host, version):
+            outdated_hosts.append(host)
+    
+    return outdated_hosts
+
+def check_against_version(host, version):
+    """
+    Checks if the installed version on a given host is up-to-date with the specified version.
+
+    Args:
+        host (str): The hostname or IP address of the device to check.
+        version (str): The version to compare against.
+
+    Returns:
+        bool: True if the installed version is greater than or equal to the specified version, False otherwise.
+    """
+
+    executor = HostCommandsExecutor(host)
+    
+    installed_version = executor.execute_command(':put [/system package update get installed-version]')
+    
+    if installed_version >= version:
+        return True
+    else:
+        return False
