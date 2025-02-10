@@ -78,10 +78,17 @@ def get_outdated_hosts(hosts, version):
     Returns:
         list: A list of hosts that do not have the specified version installed.
     """
+    counter = 1
     outdated_hosts = []
     for host in hosts:
+        print(f'Checking host {host} [{counter}/{len(hosts)}]', end='\r')
+
         if not check_against_version(host, version):
             outdated_hosts.append(host)
+        
+        counter += 1
+    
+    print(' ' * 50, end='\r')
     
     return outdated_hosts
 
