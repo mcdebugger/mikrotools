@@ -5,7 +5,7 @@ def print_reboot_progress(host, counter, total, remaining):
         print(f'\r{fcolors.darkgray}Rebooting {fcolors.lightblue}{host["identity"]} {fcolors.blue}({fcolors.yellow}{host["host"]}{fcolors.blue}) '
             f'{fcolors.red}[{counter}/{total}] '
             f'{fcolors.cyan}Remaining: {fcolors.lightpurple}{remaining}{fcolors.default}'
-            f'{(" " * 10)}',
+            f'\033[K',
             end='')
 
 def reboot_hosts(hosts):
