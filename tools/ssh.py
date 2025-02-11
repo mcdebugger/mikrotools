@@ -194,7 +194,7 @@ def upgrade_hosts_prompt(upgradable_hosts):
     
     for host in upgradable_hosts:
         print(f'{fcolors.lightblue}Host: {fcolors.bold}{fcolors.green}{host["identity"]}'
-              f'{fcolors.default} ({fcolors.lightpurple}{host["host"]}){fcolors.default}'
+              f'{fcolors.default} ({fcolors.lightpurple}{host["host"]}{fcolors.default})'
               f' {fcolors.blue}[{fcolors.red}{host["installed_version"]} > {fcolors.green}{host["latest_version"]}{fcolors.blue}]'
               f'{fcolors.default}')
 
