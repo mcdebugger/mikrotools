@@ -33,8 +33,11 @@ def backup_configs(addresses, sensitive=False):
             else:
                 # RouterOS < 7.0
                 current_config = executor.execute_command('/export hide-sensitive')
+        
+        # Writing current config to file
         with open(f'{host.identity}.rsc', 'w') as f:
             f.write(current_config)
+        
         del executor
         counter += 1
     
