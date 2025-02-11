@@ -198,7 +198,7 @@ def upgrade_hosts_prompt(upgradable_hosts):
               f' {fcolors.blue}[{fcolors.red}{host["installed_version"]} > {fcolors.green}{host["latest_version"]}{fcolors.blue}]'
               f'{fcolors.default}')
 
-    print(f'\n{fcolors.bold}{fcolors.yellow}Are you sure you want to proceed? {fcolors.red}[Y/n]{fcolors.default}')
+    print(f'\n{fcolors.bold}{fcolors.yellow}Are you sure you want to proceed? {fcolors.red}[y/N]{fcolors.default}')
     answer = input()
     
     if answer.lower() == 'y':
