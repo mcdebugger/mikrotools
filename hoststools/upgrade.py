@@ -136,11 +136,15 @@ def upgrade_hosts_firmware_apply(hosts):
     print(f'\r\033[K', end='\r')
     print(f'{fcolors.bold}{fcolors.green}All hosts upgraded successfully!{fcolors.default}')
     print(f'{fcolors.bold}{fcolors.yellow}Would you like to reboot devices now? {fcolors.red}[y/N]{fcolors.default}')
-    answer = input()
-    if answer.lower() == 'y':
-        reboot_hosts(hosts)
-    else:
-        exit()
+    while True:
+        answer = input()
+        if answer.lower() == 'y':
+            reboot_hosts(hosts)
+            break
+        elif answer.lower() == 'n':
+            exit()
+        else:
+            print(f'{fcolors.bold}{fcolors.yellow}Invalid input. Please enter "y" or "n".{fcolors.default}')
 
 def upgrade_host_firmware(host):
     """
