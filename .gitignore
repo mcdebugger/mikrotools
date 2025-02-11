@@ -1,6 +1,15 @@
 # App data
 data/
 
+# Command files and config backups
+*.rsc
+
+# Hosts files and notes
+*.txt
+
+# User settings
+settings.yaml
+
 # Visual Studio Code
 vscode/
 *.code-workspace
