@@ -38,13 +38,14 @@ def exec(host, execute_command, inventory_file, config_file, commands_file):
     execute_hosts_commands(hosts, commands)
 
 @cli.command(help='Check for routers with outdated firmware')
-@click.argument('version')
+@click.argument('min-version')
+@click.argument('max-version', required=False)
 @click.option('-H', '--host')
 @click.option('-i', '--inventory-file')
 @click.option('-c', '--config-file', default='settings.yaml')
-def outdated(version, host, inventory_file, config_file):
+def outdated(min_version, max_version, host, inventory_file, config_file):
     hosts = get_hosts()
-    outdated_hosts = get_outdated_hosts(hosts, version)
+    outdated_hosts = get_outdated_hosts(hosts, min_version, max_version)
     list_outdated_hosts(outdated_hosts)
 
 def main():

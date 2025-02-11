@@ -67,7 +67,7 @@ def execute_hosts_commands(hosts, commands):
         # Deleting executor
         del executor
 
-def get_outdated_hosts(hosts, version):
+def get_outdated_hosts(hosts, min_version, max_version):
     """
     Gets a list of hosts that do not have the specified or higher version installed.
 
@@ -83,7 +83,7 @@ def get_outdated_hosts(hosts, version):
     for host in hosts:
         print(f'{fcolors.darkgray}Checking host {fcolors.yellow}{host} {fcolors.red}[{counter}/{len(hosts)}]{fcolors.default}', end='\r')
 
-        if not check_against_version(host, version):
+        if not check_against_version(host, min_version, max_version):
             outdated_hosts.append(host)
         
         counter += 1
@@ -92,7 +92,7 @@ def get_outdated_hosts(hosts, version):
     
     return outdated_hosts
 
-def check_against_version(host, version):
+def check_against_version(host, min_version, max_version):
     """
     Checks if the installed version on a given host is up-to-date with the specified version.
 
@@ -108,7 +108,13 @@ def check_against_version(host, version):
     
     installed_version = executor.execute_command(':put [/system package update get installed-version]')
     
-    if installed_version >= version:
-        return True
+    if installed_version >= min_version:
+        if max_version:
+            if installed_version <= max_version:
+                return True
+            else:
+                return False
+        else:
+            return True
     else:
         return False
