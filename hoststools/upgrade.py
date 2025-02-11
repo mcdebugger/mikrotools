@@ -22,8 +22,8 @@ def is_upgradable(current_version, upgrade_version):
 def print_check_upgradable_progress(host, counter, total, outdated):
         print(f'{fcolors.darkgray}Checking host {fcolors.lightblue}{host.identity} '
               f'{fcolors.cyan}({fcolors.yellow}{host.address}{fcolors.cyan}) '
-              f'{fcolors.red}[{counter}/{total}] ',
-              f'{fcolors.cyan}Upgradable: {fcolors.lightpurple}{outdated}{fcolors.default} '
+              f'{fcolors.red}[{counter}/{total}]',
+              f'{fcolors.lightpurple} | {fcolors.cyan}Upgradable: {fcolors.lightpurple}{outdated}{fcolors.default} '
               f'\033[K',
               end='\r')
 
