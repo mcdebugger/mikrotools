@@ -6,8 +6,8 @@ from tools.config import get_commands, get_hosts
 from tools.outputs import list_outdated_hosts
 from tools.ssh import execute_hosts_commands
 from tools.ssh import get_outdated_hosts, get_upgradable_hosts, upgrade_hosts_prompt
-from tools.ssh import get_upgradable_hosts_bootloader, upgrade_hosts_bootloader_prompt
 from hoststools import backup_configs
+from hoststools.upgrade import upgrade_hosts_firmware_start
 
 @click.group(invoke_without_command=True)
 @click.option('-H', '--host')
@@ -73,10 +73,9 @@ def upgrade(host, inventory_file, config_file):
 @click.option('-H', '--host')
 @click.option('-i', '--inventory-file')
 @click.option('-c', '--config-file', default='settings.yaml')
-def upgrade_bootloader(host, inventory_file, config_file):
+def upgrade_firmware(host, inventory_file, config_file):
     hosts = get_hosts()
-    upgradable_hosts = get_upgradable_hosts_bootloader(hosts)
-    upgrade_hosts_bootloader_prompt(upgradable_hosts)
+    upgrade_hosts_firmware_start(hosts)
 
 if __name__ == '__main__':
     cli()
