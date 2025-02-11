@@ -48,12 +48,5 @@ def outdated(min_version, filtered_version, host, inventory_file, config_file):
     outdated_hosts = get_outdated_hosts(hosts, min_version, filtered_version)
     list_outdated_hosts(outdated_hosts)
 
-def main():
-    pass
-    # hosts = get_hosts()
-
-    # Executing commands for each host in list
-    # execute_hosts_commands(hosts)
-
 if __name__ == '__main__':
     cli()
