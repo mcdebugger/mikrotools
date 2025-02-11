@@ -124,17 +124,17 @@ def print_progress(host, counter, total, outdated):
 
 def print_upgrade_progress(host, counter, total, remaining):
         print(f'\r{fcolors.darkgray}Upgrading {fcolors.lightblue}{host["identity"]} {fcolors.blue}({fcolors.yellow}{host["host"]}{fcolors.blue}) '
-        f'{fcolors.red}[{counter}/{total}] '
-        f'{fcolors.cyan}Remaining: {fcolors.lightpurple}{remaining}{fcolors.default}'
-        f'{(' ' * 10)}',
-        end='')
+            f'{fcolors.red}[{counter}/{total}] '
+            f'{fcolors.cyan}Remaining: {fcolors.lightpurple}{remaining}{fcolors.default}'
+            f'{(" " * 10)}',
+            end='')
 
 def print_reboot_progress(host, counter, total, remaining):
         print(f'\r{fcolors.darkgray}Rebooting {fcolors.lightblue}{host["identity"]} {fcolors.blue}({fcolors.yellow}{host["host"]}{fcolors.blue}) '
-        f'{fcolors.red}[{counter}/{total}] '
-        f'{fcolors.cyan}Remaining: {fcolors.lightpurple}{remaining}{fcolors.default}'
-        f'{(' ' * 10)}',
-        end='')
+            f'{fcolors.red}[{counter}/{total}] '
+            f'{fcolors.cyan}Remaining: {fcolors.lightpurple}{remaining}{fcolors.default}'
+            f'{(" " * 10)}',
+            end='')
 
 def check_if_update_applicable(installed_version, min_version, filtered_version=None):
     """
