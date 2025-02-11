@@ -16,7 +16,9 @@ def list_hosts(addresses):
     table.add_column('Public Address', justify="left")
     table.add_column("RouterOS", justify="left")
     table.add_column("Firmware", justify="left")
+    table.add_column("Uptime", justify="left")
     
+    console.clear()
     console.print(table)
     
     for address in addresses:
@@ -24,16 +26,18 @@ def list_hosts(addresses):
         executor = HostCommandsExecutor(address)
         
         host.identity = executor.execute_command(':put [/system identity get name]')
+        host.public_address = executor.execute_command(':put [/ip cloud get public-address]')
         host.installed_routeros_version = executor.execute_command(':put [/system package update get installed-version]')
         host.current_firmware_version = executor.execute_command(':put [/system routerboard get current-firmware]')
-        host.public_address = executor.execute_command(':put [/ip cloud get public-address]')
+        host.uptime = executor.execute_command(':put [/system resource get uptime as-string]')
         
         table.add_row(
             f'[dark_orange]{host.identity}', # Host
             f'[light_steel_blue1]{host.address}', # Address
             f'[slate_blue1]{host.public_address}', # Public address
             f'[dark_olive_green3]{host.installed_routeros_version}', # RouterOS
-            f'[medium_purple1]{host.current_firmware_version}' # Firmware
+            f'[medium_purple1]{host.current_firmware_version}', # Firmware
+            f'[cornflower_blue]{host.uptime}', # Uptime
         )
         
         console.clear()
