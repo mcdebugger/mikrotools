@@ -1,3 +1,4 @@
+from packaging import version
 from rich.box import SIMPLE
 from rich.console import Console
 from rich.table import Table
@@ -29,7 +30,12 @@ def list_hosts(addresses):
         host.public_address = executor.execute_command(':put [/ip cloud get public-address]')
         host.installed_routeros_version = executor.execute_command(':put [/system package update get installed-version]')
         host.current_firmware_version = executor.execute_command(':put [/system routerboard get current-firmware]')
-        host.uptime = executor.execute_command(':put [/system resource get uptime as-string]')
+        if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
+            host.uptime = executor.execute_command(':put [/system resource get uptime as-string]')
+        else:
+            host.uptime = executor.execute_command(':put [/system resource get uptime]')
+        
+        del executor
         
         table.add_row(
             f'[dark_orange]{host.identity}', # Host
@@ -42,8 +48,6 @@ def list_hosts(addresses):
         
         console.clear()
         console.print(table)
-        
-        del executor
 
 def print_reboot_progress(host, counter, total, remaining):
         print(f'\r{fcolors.darkgray}Rebooting {fcolors.lightblue}{host.identity} '
