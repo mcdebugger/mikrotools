@@ -1,4 +1,7 @@
 from packaging import version
+from rich.box import SIMPLE
+from rich.console import Console
+from rich.table import Table
 
 from .common import reboot_hosts
 from .models import MikrotikHost
@@ -34,6 +37,51 @@ def print_upgrade_progress(host, counter, total, remaining):
               f'{fcolors.cyan}Remaining: {fcolors.lightpurple}{remaining}{fcolors.default}'
               f'\033[K',
               end='')
+
+def list_versions(addresses):
+    console = Console()
+    table = Table(title="[green]List of hosts", show_header=True, header_style="bold grey78", box=SIMPLE)
+    
+    table.add_column("Host", justify="left")
+    table.add_column("Address", justify="left")
+    table.add_column("RouterOS", justify="left")
+    table.add_column("Firmware", justify="left")
+    
+    console.print(table)
+    
+    # print(f'{fcolors.bold}{fcolors.green}List of hosts:{fcolors.default}')
+    # print('-' * 50)
+    # print(f'{fcolors.bold}{fcolors.gray}Host{fcolors.default} '
+    #       f'| {fcolors.bold}{fcolors.gray}Address{fcolors.default} '
+    #       f'| {fcolors.bold}{fcolors.gray}RouterOS{fcolors.default} '
+    #       f'| {fcolors.bold}{fcolors.gray}Firmware{fcolors.default}')
+    # print('-' * 50)
+    
+    for address in addresses:
+        host = MikrotikHost(address=address)
+        executor = HostCommandsExecutor(address)
+        
+        host.identity = executor.execute_command(':put [/system identity get name]')
+        host.installed_routeros_version = executor.execute_command(':put [/system package update get installed-version]')
+        host.current_firmware_version = executor.execute_command(':put [/system routerboard get current-firmware]')
+        
+        table.add_row(
+            f'[dark_orange]{host.identity}',
+            f'[grey70]{host.address}',
+            f'[dark_olive_green3]{host.installed_routeros_version}',
+            f'[medium_purple1]{host.current_firmware_version}'
+        )
+        
+        console.clear()
+        console.print(table)
+        
+        del executor
+        # print(f'{fcolors.lightblue}Host: {fcolors.bold}{fcolors.yellow}{host.identity:30} '
+        #       f'{fcolors.default}({fcolors.gray}{host.address:20}{fcolors.default}) '
+        #       f'{fcolors.red}| '
+        #       f'{fcolors.darkgray}RouterOS: {fcolors.lightblue}{host.installed_routeros_version} '
+        #       f'{fcolors.darkgray}Firmware: {fcolors.lightpurple}{host.current_firmware_version}'
+        #       f'{fcolors.default}')
 
 def get_firmware_upgradable_hosts(addresses):
     upgradable_hosts = []

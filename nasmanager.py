@@ -7,7 +7,7 @@ from tools.outputs import list_outdated_hosts
 from tools.ssh import execute_hosts_commands
 from tools.ssh import get_outdated_hosts, get_upgradable_hosts, upgrade_hosts_prompt
 from hoststools import backup_configs
-from hoststools.upgrade import upgrade_hosts_firmware_start
+from hoststools.upgrade import list_versions, upgrade_hosts_firmware_start
 
 @click.group(invoke_without_command=True)
 @click.option('-H', '--host')
@@ -59,6 +59,14 @@ def outdated(min_version, filtered_version, host, inventory_file, config_file):
     hosts = get_hosts()
     outdated_hosts = get_outdated_hosts(hosts, min_version, filtered_version)
     list_outdated_hosts(outdated_hosts)
+
+@cli.command(help='List installed software versions of routers')
+@click.option('-H', '--host')
+@click.option('-i', '--inventory-file')
+@click.option('-c', '--config-file', default='settings.yaml')
+def check_versions(host, inventory_file, config_file):
+    hosts = get_hosts()
+    list_versions(hosts)
 
 @cli.command(help='Upgrade routers with outdated firmware')
 @click.option('-H', '--host')
