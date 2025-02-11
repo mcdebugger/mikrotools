@@ -223,7 +223,10 @@ def upgrade_hosts_apply(upgradable_hosts):
     """
     counter = 1
     for host in upgradable_hosts:
-        print_progress(host['host'], counter, len(upgradable_hosts), len(upgradable_hosts) - counter + 1)
+        print(f'{fcolors.darkgray}Upgrading host {fcolors.yellow}{host} '
+        f'{fcolors.red}[{counter}/{len(upgradable_hosts)}] ',
+        f'{fcolors.cyan}To upgrade: {fcolors.lightpurple}{len(upgradable_hosts) - counter + 1}{fcolors.default} ',
+        end='\r')
         upgrade_host_routeros(host['host'])
         
         counter += 1
