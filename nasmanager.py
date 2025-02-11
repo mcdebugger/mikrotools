@@ -26,12 +26,13 @@ def cli(ctx, host, execute_command, inventory_file, config_file, commands_file):
                    commands_file=commands_file)
 
 @cli.command(help='Backup configs from hosts')
+@click.option('-s', '--sensitive', is_flag=True, default=False)
 @click.option('-H', '--host')
 @click.option('-i', '--inventory-file')
 @click.option('-c', '--config-file', default='settings.yaml')
-def backup(host, inventory_file, config_file):
+def backup(sensitive, host, inventory_file, config_file):
     hosts = get_hosts()
-    backup_configs(hosts)
+    backup_configs(hosts, sensitive=sensitive)
 
 @cli.command(help='Execute commands on hosts')
 @click.option('-H', '--host')
