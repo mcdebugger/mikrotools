@@ -69,6 +69,20 @@ def execute_hosts_commands(hosts, commands):
         # Deleting executor
         del executor
 
+def get_installed_version(host):
+    executor = HostCommandsExecutor(host)
+    installed_version = executor.execute_command(':put [/system package update get installed-version]')
+    del executor
+    
+    return installed_version
+
+def get_latest_version(host):
+    executor = HostCommandsExecutor(host)
+    latest_version = executor.execute_command(':put [/system package update get latest-version]')
+    del executor
+    
+    return latest_version
+
 def get_outdated_hosts(hosts, min_version, filtered_version):
 
     """
@@ -89,12 +103,11 @@ def get_outdated_hosts(hosts, min_version, filtered_version):
     counter = 1
     outdated_hosts = []
     for host in hosts:
-        print(f'{fcolors.darkgray}Checking host {fcolors.yellow}{host} '
-              f'{fcolors.red}[{counter}/{len(hosts)}] ',
-              f'{fcolors.cyan}Outdated: {fcolors.lightpurple}{len(outdated_hosts)}{fcolors.default} ',
-              end='\r')
+        print_progress(host, counter, len(hosts), len(outdated_hosts))
 
-        if check_if_update_applicable(host, min_version, filtered_version):
+        installed_version = get_installed_version(host)
+        
+        if check_if_update_applicable(installed_version, min_version, filtered_version):
             outdated_hosts.append(host)
         
         counter += 1
@@ -103,7 +116,13 @@ def get_outdated_hosts(hosts, min_version, filtered_version):
     
     return outdated_hosts
 
-def check_if_update_applicable(host, min_version, filtered_version):
+def print_progress(host, counter, total, outdated):
+        print(f'{fcolors.darkgray}Checking host {fcolors.yellow}{host} '
+            f'{fcolors.red}[{counter}/{total}] ',
+            f'{fcolors.cyan}Outdated: {fcolors.lightpurple}{outdated}{fcolors.default} ',
+            end='\r')
+
+def check_if_update_applicable(installed_version, min_version, filtered_version=None):
     """
     Checks the installed version of a host against the minimum version specified
     and returns True if an update is applicable, False otherwise.
@@ -119,9 +138,8 @@ def check_if_update_applicable(host, min_version, filtered_version):
     Returns:
         bool: True if an update is applicable, False otherwise.
     """
-    executor = HostCommandsExecutor(host)
     
-    installed_version = version.parse(executor.execute_command(':put [/system package update get installed-version]'))
+    installed_version = version.parse(installed_version)
     
     if installed_version < version.parse(min_version):
         if filtered_version:
@@ -130,3 +148,93 @@ def check_if_update_applicable(host, min_version, filtered_version):
             return True
     else:
         return False
+
+def get_upgradable_hosts(hosts):
+    upgradable_hosts = []
+    counter = 1
+    
+    for host in hosts:
+        print_progress(host, counter, len(hosts), len(upgradable_hosts))
+        executor = HostCommandsExecutor(host)
+        executor.execute_command('/system package update check-for-updates')
+        installed_version = executor.execute_command(':put [/system package update get installed-version]')
+        latest_version = executor.execute_command(':put [/system package update get latest-version]')
+        identity = executor.execute_command(':put [/system identity get name]')
+        del executor
+        
+        if check_if_update_applicable(installed_version, latest_version):
+            upgradable_hosts.append({
+                'host': host,
+                'identity': identity,
+                'installed_version': installed_version,
+                'latest_version': latest_version
+            })
+        
+        counter += 1
+    
+    print(' ' * 50, end='\r')
+    
+    return upgradable_hosts
+
+def upgrade_hosts_prompt(upgradable_hosts):
+    """
+    Prompts the user to confirm whether they want to upgrade the specified hosts.
+
+    Prints the list of hosts that will be upgraded and their respective
+    identities. Then prompts the user to answer with 'y' to proceed with the
+    upgrade or 'n' to exit the program.
+
+    Args:
+        upgradable_hosts (list): A list of dictionaries each containing the
+            information of a host to be upgraded.
+    """
+    print(f'{fcolors.bold}{fcolors.yellow}Upgradable hosts: {fcolors.red}{len(upgradable_hosts)}{fcolors.default}')
+    print(f'\nThe following list of devices will be upgraded:\n')
+    
+    for host in upgradable_hosts:
+        print(f'{fcolors.lightblue}Host: {fcolors.bold}{fcolors.green}{host["identity"]}'
+              f'{fcolors.default} ({fcolors.lightpurple}{host["host"]}){fcolors.default}'
+              f' {fcolors.blue}[{fcolors.red}{host["installed_version"]} > {fcolors.green}{host["latest_version"]}{fcolors.blue}]'
+              f'{fcolors.default}')
+
+    print(f'\n{fcolors.bold}{fcolors.yellow}Are you sure you want to proceed? {fcolors.red}[Y/n]{fcolors.default}')
+    answer = input()
+    
+    if answer.lower() == 'y':
+        upgrade_hosts_apply(upgradable_hosts)
+    else:
+        exit()
+
+def upgrade_hosts_apply(upgradable_hosts):
+    """
+    Upgrades all hosts in the given list.
+
+    :param upgradable_hosts: A list of dictionaries with information about the hosts
+                             that are upgradable. Each dictionary must contain the
+                             following keys:
+                             - host: The hostname or IP address of the host.
+                             - identity: The identity of the host (e.g. its name).
+                             - installed_version: The current installed version of
+                                                  the host.
+                             - latest_version: The latest available version of the
+                                                host.
+    :return: None
+    """
+    counter = 1
+    for host in upgradable_hosts:
+        print_progress(host['host'], counter, len(upgradable_hosts), len(upgradable_hosts) - counter + 1)
+        upgrade_host_routeros(host['host'])
+    
+    print(' ' * 50, end='\r')
+    print(f'\n{fcolors.bold}{fcolors.green}All hosts upgraded successfully!{fcolors.default}')
+    
+def upgrade_host_routeros(host):
+    """
+    Upgrades RouterOS version on the given host.
+
+    :param host: the IP address or hostname of the host to upgrade
+    :return: None
+    """
+    executor = HostCommandsExecutor(host)
+    executor.execute_command('/system package update install')
+    del executor
