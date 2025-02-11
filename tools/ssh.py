@@ -223,7 +223,7 @@ def upgrade_hosts_apply(upgradable_hosts):
     """
     counter = 1
     for host in upgradable_hosts:
-        print(f'{fcolors.darkgray}Upgrading {fcolors.lightblue}{host["identity"]} {fcolors.blue}({fcolors.yellow}{host['host']}{fcolors.blue}) '
+        print(f'{fcolors.darkgray}Upgrading {fcolors.lightblue}{host["identity"]} {fcolors.blue}({fcolors.yellow}{host["host"]}{fcolors.blue}) '
         f'{fcolors.red}[{counter}/{len(upgradable_hosts)}] ',
         f'{fcolors.cyan}To upgrade: {fcolors.lightpurple}{len(upgradable_hosts) - counter + 1}{fcolors.default} ',
         end='\r')
