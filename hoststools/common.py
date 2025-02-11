@@ -17,7 +17,8 @@ def list_hosts(addresses):
     table.add_column('Public Address', justify="left")
     table.add_column("RouterOS", justify="left")
     table.add_column("Firmware", justify="left")
-    table.add_column("CPU Load", justify="left")
+    table.add_column("Model", justify="left")
+    table.add_column("CPU %", justify="left")
     table.add_column("Uptime", justify="left")
     
     console.clear()
@@ -31,6 +32,7 @@ def list_hosts(addresses):
         host.public_address = executor.execute_command(':put [/ip cloud get public-address]')
         host.installed_routeros_version = executor.execute_command(':put [/system package update get installed-version]')
         host.current_firmware_version = executor.execute_command(':put [/system routerboard get current-firmware]')
+        host.model = executor.execute_command(':put [/system routerboard get model]')
         host.cpu_load = int(executor.execute_command(':put [/system resource get cpu-load]'))
         if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
             host.uptime = executor.execute_command(':put [/system resource get uptime as-string]')
@@ -54,7 +56,8 @@ def list_hosts(addresses):
             f'[slate_blue1]{host.public_address}', # Public address
             f'[dark_olive_green3]{host.installed_routeros_version}', # RouterOS
             f'[medium_purple1]{host.current_firmware_version}', # Firmware
-            f'[{cpu_color}]{host.cpu_load}%', # CPU Load
+            f'[dodger_blue2]{host.model}', # Model
+            f'[{cpu_color}]{host.cpu_load}%', # CPU %
             f'[cornflower_blue]{host.uptime}', # Uptime
         )
         

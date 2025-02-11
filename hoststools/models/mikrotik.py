@@ -7,5 +7,6 @@ class MikrotikHost(Host):
     current_firmware_version: str | None = None
     upgrade_firmware_version: str | None = None
     cpu_load: int | None = None
+    model: str | None = None
     uptime: str | None = None
     public_address: str | None = None
