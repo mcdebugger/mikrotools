@@ -81,7 +81,10 @@ def get_outdated_hosts(hosts, min_version, max_version):
     counter = 1
     outdated_hosts = []
     for host in hosts:
-        print(f'{fcolors.darkgray}Checking host {fcolors.yellow}{host} {fcolors.red}[{counter}/{len(hosts)}]{fcolors.default}', end='\r')
+        print(f'{fcolors.darkgray}Checking host {fcolors.yellow}{host} '
+              f'{fcolors.red}[{counter}/{len(hosts)}] ',
+              f'{fcolors.cyan}Outdated: {fcolors.lightpurple}{len(outdated_hosts)}{fcolors.default} ',
+              end='\r')
 
         if not check_against_version(host, min_version, max_version):
             outdated_hosts.append(host)
