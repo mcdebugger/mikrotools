@@ -1,5 +1,7 @@
 import paramiko
 
+from packaging import version
+
 from tools.colors import fcolors_256 as fcolors
 from tools.config import get_config
 
@@ -92,7 +94,7 @@ def get_outdated_hosts(hosts, min_version, filtered_version):
               f'{fcolors.cyan}Outdated: {fcolors.lightpurple}{len(outdated_hosts)}{fcolors.default} ',
               end='\r')
 
-        if not check_against_version(host, min_version, filtered_version):
+        if check_if_update_applicable(host, min_version, filtered_version):
             outdated_hosts.append(host)
         
         counter += 1
@@ -101,34 +103,29 @@ def get_outdated_hosts(hosts, min_version, filtered_version):
     
     return outdated_hosts
 
-def check_against_version(host, min_version, filtered_version):
+def check_if_update_applicable(host, min_version, filtered_version):
     """
-    Checks if the host's installed version meets the specified minimum version
-    requirement and optionally a filtered version requirement.
+    Checks the installed version of a host against the minimum version specified
+    and returns True if an update is applicable, False otherwise.
 
     Args:
         host (str): The hostname or IP address of the host to check.
         min_version (str): The minimum version required.
         filtered_version (str, optional): An optional version that further filters
-                                          the hosts. If specified, the installed
+                                          the host. If specified, the installed
                                           version must be greater than or equal
                                           to this version.
 
     Returns:
-        bool: True if the installed version meets the version requirements,
-              False otherwise.
+        bool: True if an update is applicable, False otherwise.
     """
-
     executor = HostCommandsExecutor(host)
     
-    installed_version = executor.execute_command(':put [/system package update get installed-version]')
+    installed_version = version.parse(executor.execute_command(':put [/system package update get installed-version]'))
     
-    if installed_version >= min_version:
+    if installed_version < version.parse(min_version):
         if filtered_version:
-            if installed_version >= filtered_version:
-                return True
-            else:
-                return False
+            return installed_version >= version.parse(filtered_version)
         else:
             return True
     else:
