@@ -225,6 +225,8 @@ def upgrade_hosts_apply(upgradable_hosts):
     for host in upgradable_hosts:
         print_progress(host['host'], counter, len(upgradable_hosts), len(upgradable_hosts) - counter + 1)
         upgrade_host_routeros(host['host'])
+        
+        counter += 1
     
     print(' ' * 50, end='\r')
     print(f'\n{fcolors.bold}{fcolors.green}All hosts upgraded successfully!{fcolors.default}')
