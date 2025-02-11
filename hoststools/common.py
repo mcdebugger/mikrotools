@@ -4,7 +4,7 @@ from tools.ssh import HostCommandsExecutor
 def print_reboot_progress(host, counter, total, remaining):
         print(f'\r{fcolors.darkgray}Rebooting {fcolors.lightblue}{host["identity"]} {fcolors.blue}({fcolors.yellow}{host["host"]}{fcolors.blue}) '
             f'{fcolors.red}[{counter}/{total}] '
-            f'{fcolors.cyan}Remaining: {fcolors.lightpurple}{remaining}{fcolors.default}'
+            f'{fcolors.cyan}Remaining: {fcolors.lightpurple}{remaining}{fcolors.default} '
             f'\033[K',
             end='')
 

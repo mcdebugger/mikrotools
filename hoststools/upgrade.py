@@ -20,18 +20,18 @@ def is_upgradable(current_version, upgrade_version):
     return version.parse(current_version) < version.parse(upgrade_version)
 
 def print_check_upgradable_progress(host, counter, total, outdated):
-        print(f'\r{fcolors.darkgray}Checking host {fcolors.lightblue}{host.identity}',
-              f'{fcolors.cyan}({fcolors.yellow}{host.address}{fcolors.cyan})',
-              f'{fcolors.red}[{counter}/{total}]',
-              f'{fcolors.lightpurple}| {fcolors.cyan}Upgradable: {fcolors.lightpurple}{outdated}{fcolors.default}'
+        print(f'\r{fcolors.darkgray}Checking host {fcolors.lightblue}{host.identity} '
+              f'{fcolors.cyan}({fcolors.yellow}{host.address}{fcolors.cyan}) '
+              f'{fcolors.red}[{counter}/{total}] '
+              f'{fcolors.lightpurple}| {fcolors.cyan}Upgradable: {fcolors.lightpurple}{outdated}{fcolors.default} '
               f'\033[K',
               end='')
 
 def print_upgrade_progress(host, counter, total, remaining):
-        print(f'\r{fcolors.darkgray}Upgrading {fcolors.lightblue}{host.identity}',
-              f'{fcolors.blue}({fcolors.yellow}{host.address}{fcolors.blue})',
-              f'{fcolors.red}[{counter}/{total}]',
-              f'{fcolors.cyan}Remaining: {fcolors.lightpurple}{remaining}{fcolors.default}'
+        print(f'\r{fcolors.darkgray}Upgrading {fcolors.lightblue}{host.identity} '
+              f'{fcolors.blue}({fcolors.yellow}{host.address}{fcolors.blue}) '
+              f'{fcolors.red}[{counter}/{total}] '
+              f'{fcolors.cyan}Remaining: {fcolors.lightpurple}{remaining}{fcolors.default} '
               f'\033[K',
               end='')
 
