@@ -129,13 +129,6 @@ def print_upgrade_progress(host, counter, total, remaining):
             f'{(" " * 10)}',
             end='')
 
-def print_reboot_progress(host, counter, total, remaining):
-        print(f'\r{fcolors.darkgray}Rebooting {fcolors.lightblue}{host["identity"]} {fcolors.blue}({fcolors.yellow}{host["host"]}{fcolors.blue}) '
-            f'{fcolors.red}[{counter}/{total}] '
-            f'{fcolors.cyan}Remaining: {fcolors.lightpurple}{remaining}{fcolors.default}'
-            f'{(" " * 10)}',
-            end='')
-
 def check_if_update_applicable(installed_version, min_version, filtered_version=None):
     """
     Checks the installed version of a host against the minimum version specified
@@ -253,91 +246,4 @@ def upgrade_host_routeros(host):
     """
     executor = HostCommandsExecutor(host)
     executor.execute_command('/system package update install')
-    del executor
-
-def get_upgradable_hosts_bootloader(hosts):
-    upgradable_hosts = []
-    counter = 1
-    
-    for host in hosts:
-        print_progress(host, counter, len(hosts), len(upgradable_hosts))
-        executor = HostCommandsExecutor(host)
-        installed_version = executor.execute_command(':put [/system routerboard get current-firmware]')
-        latest_version = executor.execute_command(':put [/system routerboard get upgrade-firmware]')
-        identity = executor.execute_command(':put [/system identity get name]')
-        del executor
-        
-        if installed_version and latest_version:
-            if check_if_update_applicable(installed_version, latest_version):
-                upgradable_hosts.append({
-                    'host': host,
-                    'identity': identity,
-                    'installed_version': installed_version,
-                    'latest_version': latest_version
-                })
-        
-        counter += 1
-    
-    print(' ' * 50, end='\r')
-    
-    return upgradable_hosts
-
-def upgrade_hosts_bootloader_prompt(upgradable_hosts):
-    print(f'{fcolors.bold}{fcolors.yellow}Upgradable hosts: {fcolors.red}{len(upgradable_hosts)}{fcolors.default}')
-    print(f'\nThe following list of devices will be upgraded:\n')
-    
-    for host in upgradable_hosts:
-        print(f'{fcolors.lightblue}Host: {fcolors.bold}{fcolors.green}{host["identity"]}'
-              f'{fcolors.default} ({fcolors.lightpurple}{host["host"]}{fcolors.default})'
-              f' {fcolors.blue}[{fcolors.red}{host["installed_version"]} > {fcolors.green}{host["latest_version"]}{fcolors.blue}]'
-              f'{fcolors.default}')
-
-    print(f'\n{fcolors.bold}{fcolors.yellow}Are you sure you want to proceed? {fcolors.red}[y/N]{fcolors.default}')
-    answer = input()
-    
-    if answer.lower() == 'y':
-        upgrade_hosts_bootloader(upgradable_hosts)
-    else:
-        exit()
-
-def upgrade_hosts_bootloader(upgradable_hosts):
-    counter = 1
-    for host in upgradable_hosts:
-        print_upgrade_progress(host, counter, len(upgradable_hosts), len(upgradable_hosts) - counter + 1)
-        upgrade_host_bootloader(host['host'])
-        counter += 1
-    
-    print(f'\r{(" " * 50)}')
-    print(f'{fcolors.bold}{fcolors.green}All hosts upgraded successfully!{fcolors.default}')
-    print(f'{fcolors.bold}{fcolors.yellow}Would you like to reboot devices now? {fcolors.red}[y/N]{fcolors.default}')
-    answer = input()
-    if answer.lower() == 'y':
-        reboot_hosts(upgradable_hosts)
-    else:
-        exit()
-
-def upgrade_host_bootloader(host):
-    """
-    Upgrades RouterBoard version on the given host.
-
-    :param host: the IP address or hostname of the host to upgrade
-    :return: None
-    """
-    executor = HostCommandsExecutor(host)
-    executor.execute_command('/system routerboard upgrade')
-    del executor
-
-def reboot_hosts(hosts):
-    counter = 1
-    for host in hosts:
-        print_reboot_progress(host, counter, len(hosts), len(hosts) - counter + 1)
-        reboot_host(host['host'])
-        counter += 1
-    
-    print(f'\r{(" " * 50)}')
-    print(f'{fcolors.bold}{fcolors.green}All hosts rebooted successfully!{fcolors.default}')
-
-def reboot_host(host):
-    executor = HostCommandsExecutor(host)
-    executor.execute_command('/system reboot')
     del executor
