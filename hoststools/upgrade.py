@@ -20,17 +20,17 @@ def is_upgradable(current_version, upgrade_version):
     return version.parse(current_version) < version.parse(upgrade_version)
 
 def print_check_upgradable_progress(host, counter, total, outdated):
-        print(f'{fcolors.darkgray}Checking host {fcolors.lightblue}{host.identity} '
-              f'{fcolors.cyan}({fcolors.yellow}{host.address}{fcolors.cyan}) '
+        print(f'\r{fcolors.darkgray}Checking host {fcolors.lightblue}{host.identity}',
+              f'{fcolors.cyan}({fcolors.yellow}{host.address}{fcolors.cyan})',
               f'{fcolors.red}[{counter}/{total}]',
-              f'{fcolors.lightpurple} | {fcolors.cyan}Upgradable: {fcolors.lightpurple}{outdated}{fcolors.default} '
+              f'{fcolors.lightpurple}| {fcolors.cyan}Upgradable: {fcolors.lightpurple}{outdated}{fcolors.default}'
               f'\033[K',
-              end='\r')
+              end='')
 
 def print_upgrade_progress(host, counter, total, remaining):
-        print(f'\r{fcolors.darkgray}Upgrading {fcolors.lightblue}{host.identity} '
-              f'{fcolors.blue}({fcolors.yellow}{host.address}{fcolors.blue}) '
-              f'{fcolors.red}[{counter}/{total}] '
+        print(f'\r{fcolors.darkgray}Upgrading {fcolors.lightblue}{host.identity}',
+              f'{fcolors.blue}({fcolors.yellow}{host.address}{fcolors.blue})',
+              f'{fcolors.red}[{counter}/{total}]',
               f'{fcolors.cyan}Remaining: {fcolors.lightpurple}{remaining}{fcolors.default}'
               f'\033[K',
               end='')
@@ -57,7 +57,7 @@ def get_firmware_upgradable_hosts(addresses):
         
         counter += 1
     
-    print(' ' * 70, end='\r')
+    print('\r\033[K', end='\r')
     
     return upgradable_hosts
 
@@ -133,7 +133,7 @@ def upgrade_hosts_firmware_apply(hosts):
         upgrade_host_firmware(host)
         counter += 1
     
-    print(f'\r{(" " * 50)}')
+    print(f'\r\033[K', end='\r')
     print(f'{fcolors.bold}{fcolors.green}All hosts upgraded successfully!{fcolors.default}')
     print(f'{fcolors.bold}{fcolors.yellow}Would you like to reboot devices now? {fcolors.red}[y/N]{fcolors.default}')
     answer = input()

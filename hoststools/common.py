@@ -15,7 +15,7 @@ def reboot_hosts(hosts):
         reboot_host(host['host'])
         counter += 1
     
-    print(f'\r{(" " * 50)}')
+    print(f'\r\033[K', end='\r')
     print(f'{fcolors.bold}{fcolors.green}All hosts rebooted successfully!{fcolors.default}')
 
 def reboot_host(host):
