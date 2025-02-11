@@ -31,7 +31,7 @@ def list_hosts(addresses):
         host.public_address = executor.execute_command(':put [/ip cloud get public-address]')
         host.installed_routeros_version = executor.execute_command(':put [/system package update get installed-version]')
         host.current_firmware_version = executor.execute_command(':put [/system routerboard get current-firmware]')
-        host.cpu_load = executor.execute_command(':put [/system resource get cpu-load]')
+        host.cpu_load = int(executor.execute_command(':put [/system resource get cpu-load]'))
         if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
             host.uptime = executor.execute_command(':put [/system resource get uptime as-string]')
         else:
@@ -39,13 +39,22 @@ def list_hosts(addresses):
         
         del executor
         
+        if host.cpu_load < 40:
+            cpu_color = 'green'
+        elif host.cpu_load < 60:
+            cpu_color = 'yellow'
+        elif host.cpu_load < 80:
+            cpu_color = 'dark_orange'
+        else:
+            cpu_color = 'red'
+        
         table.add_row(
             f'[dark_orange]{host.identity}', # Host
             f'[light_steel_blue1]{host.address}', # Address
             f'[slate_blue1]{host.public_address}', # Public address
             f'[dark_olive_green3]{host.installed_routeros_version}', # RouterOS
             f'[medium_purple1]{host.current_firmware_version}', # Firmware
-            f'[dark_orange]{host.cpu_load}%', # CPU Load
+            f'[{cpu_color}]{host.cpu_load}%', # CPU Load
             f'[cornflower_blue]{host.uptime}', # Uptime
         )
         
