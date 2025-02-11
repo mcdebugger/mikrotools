@@ -23,7 +23,8 @@ def print_check_upgradable_progress(host, counter, total, outdated):
         print(f'{fcolors.darkgray}Checking host {fcolors.lightblue}{host.identity} '
               f'{fcolors.cyan}({fcolors.yellow}{host.address}{fcolors.cyan}) '
               f'{fcolors.red}[{counter}/{total}] ',
-              f'{fcolors.cyan}Upgradable: {fcolors.lightpurple}{outdated}{fcolors.default} ',
+              f'{fcolors.cyan}Upgradable: {fcolors.lightpurple}{outdated}{fcolors.default} '
+              f'\033[K',
               end='\r')
 
 def print_upgrade_progress(host, counter, total, remaining):
@@ -31,7 +32,7 @@ def print_upgrade_progress(host, counter, total, remaining):
               f'{fcolors.blue}({fcolors.yellow}{host.address}{fcolors.blue}) '
               f'{fcolors.red}[{counter}/{total}] '
               f'{fcolors.cyan}Remaining: {fcolors.lightpurple}{remaining}{fcolors.default}'
-              f'{(" " * 10)}',
+              f'\033[K',
               end='')
 
 def get_firmware_upgradable_hosts(addresses):
