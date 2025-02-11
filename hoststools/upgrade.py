@@ -49,14 +49,6 @@ def list_versions(addresses):
     
     console.print(table)
     
-    # print(f'{fcolors.bold}{fcolors.green}List of hosts:{fcolors.default}')
-    # print('-' * 50)
-    # print(f'{fcolors.bold}{fcolors.gray}Host{fcolors.default} '
-    #       f'| {fcolors.bold}{fcolors.gray}Address{fcolors.default} '
-    #       f'| {fcolors.bold}{fcolors.gray}RouterOS{fcolors.default} '
-    #       f'| {fcolors.bold}{fcolors.gray}Firmware{fcolors.default}')
-    # print('-' * 50)
-    
     for address in addresses:
         host = MikrotikHost(address=address)
         executor = HostCommandsExecutor(address)
@@ -76,12 +68,6 @@ def list_versions(addresses):
         console.print(table)
         
         del executor
-        # print(f'{fcolors.lightblue}Host: {fcolors.bold}{fcolors.yellow}{host.identity:30} '
-        #       f'{fcolors.default}({fcolors.gray}{host.address:20}{fcolors.default}) '
-        #       f'{fcolors.red}| '
-        #       f'{fcolors.darkgray}RouterOS: {fcolors.lightblue}{host.installed_routeros_version} '
-        #       f'{fcolors.darkgray}Firmware: {fcolors.lightpurple}{host.current_firmware_version}'
-        #       f'{fcolors.default}')
 
 def get_firmware_upgradable_hosts(addresses):
     upgradable_hosts = []
