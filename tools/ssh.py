@@ -67,16 +67,22 @@ def execute_hosts_commands(hosts, commands):
         # Deleting executor
         del executor
 
-def get_outdated_hosts(hosts, min_version, max_version):
+def get_outdated_hosts(hosts, min_version, filtered_version):
+
     """
-    Gets a list of hosts that do not have the specified or higher version installed.
+    Checks the installed version of each host in the given list against the minimum
+    version specified and returns a list of hosts with outdated versions.
 
     Args:
-        hosts (list): A list of hostnames or IP addresses to check.
-        version (str): The version to compare against.
+        hosts (list[str]): A list of hostnames or IP addresses to check.
+        min_version (str): The minimum version required.
+        filtered_version (str, optional): An optional version that further filters
+                                          the hosts. If specified, the installed
+                                          version must be greater than or equal
+                                          to this version.
 
     Returns:
-        list: A list of hosts that do not have the specified version installed.
+        list[str]: A list of hostnames or IP addresses with outdated versions.
     """
     counter = 1
     outdated_hosts = []
@@ -86,7 +92,7 @@ def get_outdated_hosts(hosts, min_version, max_version):
               f'{fcolors.cyan}Outdated: {fcolors.lightpurple}{len(outdated_hosts)}{fcolors.default} ',
               end='\r')
 
-        if not check_against_version(host, min_version, max_version):
+        if not check_against_version(host, min_version, filtered_version):
             outdated_hosts.append(host)
         
         counter += 1
@@ -95,16 +101,22 @@ def get_outdated_hosts(hosts, min_version, max_version):
     
     return outdated_hosts
 
-def check_against_version(host, min_version, max_version):
+def check_against_version(host, min_version, filtered_version):
     """
-    Checks if the installed version on a given host is up-to-date with the specified version.
+    Checks if the host's installed version meets the specified minimum version
+    requirement and optionally a filtered version requirement.
 
     Args:
-        host (str): The hostname or IP address of the device to check.
-        version (str): The version to compare against.
+        host (str): The hostname or IP address of the host to check.
+        min_version (str): The minimum version required.
+        filtered_version (str, optional): An optional version that further filters
+                                          the hosts. If specified, the installed
+                                          version must be greater than or equal
+                                          to this version.
 
     Returns:
-        bool: True if the installed version is greater than or equal to the specified version, False otherwise.
+        bool: True if the installed version meets the version requirements,
+              False otherwise.
     """
 
     executor = HostCommandsExecutor(host)
@@ -112,8 +124,8 @@ def check_against_version(host, min_version, max_version):
     installed_version = executor.execute_command(':put [/system package update get installed-version]')
     
     if installed_version >= min_version:
-        if max_version:
-            if installed_version <= max_version:
+        if filtered_version:
+            if installed_version >= filtered_version:
                 return True
             else:
                 return False
