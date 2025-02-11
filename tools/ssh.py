@@ -162,13 +162,14 @@ def get_upgradable_hosts(hosts):
         identity = executor.execute_command(':put [/system identity get name]')
         del executor
         
-        if check_if_update_applicable(installed_version, latest_version):
-            upgradable_hosts.append({
-                'host': host,
-                'identity': identity,
-                'installed_version': installed_version,
-                'latest_version': latest_version
-            })
+        if installed_version and latest_version:
+            if check_if_update_applicable(installed_version, latest_version):
+                upgradable_hosts.append({
+                    'host': host,
+                    'identity': identity,
+                    'installed_version': installed_version,
+                    'latest_version': latest_version
+                })
         
         counter += 1
     
