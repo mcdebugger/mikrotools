@@ -11,9 +11,7 @@ def get_commands():
     elif ctx.params['commands_file']:
         commands = get_commands_from_file(ctx.params['commands_file'])
     else:
-        # Getting config from YAML file
-        cfg = get_config()
-        commands = [cfg['Command']]
+        commands = []
     
     return commands
 

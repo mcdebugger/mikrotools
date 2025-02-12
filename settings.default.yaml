@@ -3,4 +3,3 @@ Port: 22
 User: admin
 KeyFile: mykey_id_ecdsa
 HostsFile: hosts.txt
-Command: /system identity print
