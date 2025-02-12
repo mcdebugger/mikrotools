@@ -9,6 +9,7 @@ from tools.colors import fcolors_256 as fcolors
 from tools.ssh import HostCommandsExecutor
 
 def list_hosts(addresses):
+    offline_hosts = 0
     console = Console()
     table = Table(title="[green]List of hosts", show_header=True, header_style="bold grey78", box=SIMPLE)
     
@@ -32,6 +33,7 @@ def list_hosts(addresses):
             executor = HostCommandsExecutor(address)
         except TimeoutError:
             timeout = True
+            offline_hosts += 1
         else:
             host.identity = executor.execute_command(':put [/system identity get name]')
             host.public_address = executor.execute_command(':put [/ip cloud get public-address]')
@@ -78,7 +80,15 @@ def list_hosts(addresses):
         console.print(table)
         
         console.print(f'[medium_purple1]{"-" * 15}')
-        console.print(f'[cornflower_blue]Total hosts: [dark_olive_green3]{len(addresses)}\n')
+        console.print(f'[cornflower_blue]Total hosts: '
+                      f'[light_steel_blue1]{len(table.rows)} '
+                      f'[medium_purple1]| '
+                      f'[cornflower_blue]Online hosts: '
+                      f'[green]{len(table.rows) - offline_hosts} '
+                      f'[medium_purple1]| '
+                      f'[cornflower_blue]Offline hosts: '
+                      f'[red]{offline_hosts} '
+                      f'\n')
 
 def print_reboot_progress(host, counter, total, remaining):
         print(f'\r{fcolors.darkgray}Rebooting {fcolors.lightblue}{host.identity} '
