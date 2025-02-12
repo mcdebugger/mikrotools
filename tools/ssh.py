@@ -103,26 +103,33 @@ def get_outdated_hosts(hosts, min_version, filtered_version):
         list[str]: A list of hostnames or IP addresses with outdated versions.
     """
     counter = 1
+    offline = 0
     outdated_hosts = []
     for host in hosts:
-        print_progress(host, counter, len(hosts), len(outdated_hosts))
+        print_progress(host, counter, len(hosts), len(outdated_hosts), offline)
 
-        installed_version = get_installed_version(host)
+        try:
+            installed_version = get_installed_version(host)
+        except TimeoutError:
+            offline += 1
+            counter += 1
+            continue
         
         if check_if_update_applicable(installed_version, min_version, filtered_version):
             outdated_hosts.append(host)
         
         counter += 1
     
-    print(' ' * 50, end='\r')
+    print('\r\033[K', end='\r')
     
     return outdated_hosts
 
-def print_progress(host, counter, total, outdated):
-        print(f'{fcolors.darkgray}Checking host {fcolors.yellow}{host} '
-            f'{fcolors.red}[{counter}/{total}] ',
-            f'{fcolors.cyan}Outdated: {fcolors.lightpurple}{outdated}{fcolors.default} ',
-            end='\r')
+def print_progress(host, counter, total, outdated, offline):
+        print(f'\r{fcolors.darkgray}Checking host {fcolors.yellow}{host} '
+            f'{fcolors.red}[{counter}/{total}] '
+            f'{fcolors.cyan}Outdated: {fcolors.lightpurple}{outdated}{fcolors.default} '
+            f'{fcolors.cyan}Offline: {fcolors.red}{offline}{fcolors.default}',
+            end='')
 
 def print_upgrade_progress(host, counter, total, remaining):
         print(f'\r{fcolors.darkgray}Upgrading {fcolors.lightblue}{host["identity"]} {fcolors.blue}({fcolors.yellow}{host["host"]}{fcolors.blue}) '
@@ -160,13 +167,15 @@ def check_if_update_applicable(installed_version, min_version, filtered_version=
 
 def get_upgradable_hosts(hosts):
     upgradable_hosts = []
+    offline_hosts = 0
     counter = 1
     
     for host in hosts:
-        print_progress(host, counter, len(hosts), len(upgradable_hosts))
+        print_progress(host, counter, len(hosts), len(upgradable_hosts), offline_hosts)
         try:
             executor = HostCommandsExecutor(host)
         except TimeoutError:
+            offline_hosts += 1
             counter += 1
             continue
         else:
@@ -187,7 +196,7 @@ def get_upgradable_hosts(hosts):
         
         counter += 1
     
-    print(' ' * 50, end='\r')
+    print('\r\033[K', end='\r')
     
     return upgradable_hosts
 
