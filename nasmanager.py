@@ -10,15 +10,46 @@ from hoststools import backup_configs
 from hoststools.common import list_hosts
 from hoststools.upgrade import upgrade_hosts_firmware_start, upgrade_hosts_routeros_start
 
+class Mutex(click.Option):
+    def __init__(self, *args, **kwargs):
+        self.not_required_if:list = kwargs.pop("not_required_if")
+
+        assert self.not_required_if, "'not_required_if' parameter required"
+        kwargs["help"] = (kwargs.get("help", "") + "Option is mutually exclusive with " + ", ".join(self.not_required_if) + ".").strip()
+        super(Mutex, self).__init__(*args, **kwargs)
+
+    def handle_parse_result(self, ctx, opts, args):
+        current_opt:bool = self.name in opts
+        for mutex_opt in self.not_required_if:
+            if mutex_opt in opts:
+                if current_opt:
+                    raise click.UsageError("Illegal usage: '" + str(self.name) + "' is mutually exclusive with " + str(mutex_opt) + ".")
+                else:
+                    self.required = False
+        return super(Mutex, self).handle_parse_result(ctx, opts, args)
+
+def validate_commands(ctx, param, values):
+    execute_command = ctx.params.get('execute_command')
+    commands_file = ctx.params.get('commands_file')
+    
+    if (not execute_command and not commands_file):
+        raise click.UsageError('You must provide either -e or -C')
+    
+    if (execute_command and commands_file):
+        raise click.UsageError('You must provide either -e or -C, but not both.')
+    
+    return values
+
 @click.group(invoke_without_command=True)
 @click.option('-H', '--host')
-@click.option('-e', '--execute-command')
+@click.option('-e', '--execute-command', cls=Mutex, not_required_if=['commands_file'])
 @click.option('-i', '--inventory-file')
 @click.option('-c', '--config-file', default='settings.yaml')
-@click.option('-C', '--commands-file')
+@click.option('-C', '--commands-file', cls=Mutex, not_required_if=['execute_command'])
 @click.pass_context
 def cli(ctx, host, execute_command, inventory_file, config_file, commands_file):
     if ctx.invoked_subcommand is None:
+        validate_commands(ctx, None, None)
         ctx.invoke(exec,
                    host=host,
                    execute_command=execute_command,
@@ -37,10 +68,10 @@ def backup(sensitive, host, inventory_file, config_file):
 
 @cli.command(help='Execute commands on hosts')
 @click.option('-H', '--host')
-@click.option('-e', '--execute-command')
+@click.option('-e', '--execute-command', required=True, cls=Mutex, not_required_if=['commands_file'])
 @click.option('-i', '--inventory-file')
 @click.option('-c', '--config-file', default='settings.yaml')
-@click.option('-C', '--commands-file')
+@click.option('-C', '--commands-file', required=True, cls=Mutex, not_required_if=['execute_command'])
 def exec(host, execute_command, inventory_file, config_file, commands_file):
     hosts = get_hosts()
     
