@@ -164,12 +164,16 @@ def get_upgradable_hosts(hosts):
     
     for host in hosts:
         print_progress(host, counter, len(hosts), len(upgradable_hosts))
-        executor = HostCommandsExecutor(host)
-        executor.execute_command('/system package update check-for-updates')
-        installed_version = executor.execute_command(':put [/system package update get installed-version]')
-        latest_version = executor.execute_command(':put [/system package update get latest-version]')
-        identity = executor.execute_command(':put [/system identity get name]')
-        del executor
+        try:
+            executor = HostCommandsExecutor(host)
+        except TimeoutError:
+            continue
+        else:
+            executor.execute_command('/system package update check-for-updates')
+            installed_version = executor.execute_command(':put [/system package update get installed-version]')
+            latest_version = executor.execute_command(':put [/system package update get latest-version]')
+            identity = executor.execute_command(':put [/system identity get name]')
+            del executor
         
         if installed_version and latest_version:
             if check_if_update_applicable(installed_version, latest_version):
