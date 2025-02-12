@@ -40,7 +40,7 @@ def validate_commands(ctx, param, values):
     
     return values
 
-@click.group(invoke_without_command=True, context_settings=dict(help_option_names=["-h", "--help"]))
+@click.group(invoke_without_command=True, context_settings=dict(help_option_names=['-h', '--help']))
 @click.option('-H', '--host')
 @click.option('-e', '--execute-command', cls=Mutex, not_required_if=['commands_file'])
 @click.option('-i', '--inventory-file')
