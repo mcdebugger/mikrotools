@@ -36,7 +36,9 @@ class HostCommandsExecutor():
         self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy)
         
         # Connecting to host
-        self.ssh.connect(host, username=user, key_filename=keyfile, port=port, disabled_algorithms={'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']})
+        self.ssh.connect(host, username=user, key_filename=keyfile, port=port,
+                         disabled_algorithms={'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']},
+                         timeout=5)
     
     def __close_connection(self):
         # Closing SSH connection

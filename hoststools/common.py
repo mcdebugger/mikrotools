@@ -25,41 +25,54 @@ def list_hosts(addresses):
     console.print(table)
     
     for address in addresses:
+        timeout = False
         host = MikrotikHost(address=address)
-        executor = HostCommandsExecutor(address)
         
-        host.identity = executor.execute_command(':put [/system identity get name]')
-        host.public_address = executor.execute_command(':put [/ip cloud get public-address]')
-        host.installed_routeros_version = executor.execute_command(':put [/system package update get installed-version]')
-        host.current_firmware_version = executor.execute_command(':put [/system routerboard get current-firmware]')
-        host.model = executor.execute_command(':put [/system routerboard get model]')
-        host.cpu_load = int(executor.execute_command(':put [/system resource get cpu-load]'))
-        if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
-            host.uptime = executor.execute_command(':put [/system resource get uptime as-string]')
+        try:
+            executor = HostCommandsExecutor(address)
+        except TimeoutError:
+            timeout = True
         else:
-            host.uptime = executor.execute_command(':put [/system resource get uptime]')
+            host.identity = executor.execute_command(':put [/system identity get name]')
+            host.public_address = executor.execute_command(':put [/ip cloud get public-address]')
+            host.installed_routeros_version = executor.execute_command(':put [/system package update get installed-version]')
+            host.current_firmware_version = executor.execute_command(':put [/system routerboard get current-firmware]')
+            host.model = executor.execute_command(':put [/system routerboard get model]')
+            host.cpu_load = int(executor.execute_command(':put [/system resource get cpu-load]'))
+            if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
+                host.uptime = executor.execute_command(':put [/system resource get uptime as-string]')
+            else:
+                host.uptime = executor.execute_command(':put [/system resource get uptime]')
+            del executor
         
-        del executor
-        
-        if host.cpu_load < 40:
-            cpu_color = 'green'
-        elif host.cpu_load < 60:
-            cpu_color = 'yellow'
-        elif host.cpu_load < 80:
-            cpu_color = 'dark_orange'
+        if timeout:
+            table.add_row(
+                f'[red]{host.identity if host.identity is not None else "-"}', # Host
+                f'[light_steel_blue1]{host.address if host.address is not None else "-"}', # Address
+                f'[red]timeout'
+            )
         else:
-            cpu_color = 'red'
-        
-        table.add_row(
-            f'[dark_orange]{host.identity}', # Host
-            f'[light_steel_blue1]{host.address}', # Address
-            f'[slate_blue1]{host.public_address}', # Public address
-            f'[dark_olive_green3]{host.installed_routeros_version}', # RouterOS
-            f'[medium_purple1]{host.current_firmware_version}', # Firmware
-            f'[dodger_blue2]{host.model}', # Model
-            f'[{cpu_color}]{host.cpu_load}%', # CPU %
-            f'[cornflower_blue]{host.uptime}', # Uptime
-        )
+            if host.cpu_load is None:
+                cpu_color = 'red'
+            elif host.cpu_load < 40:
+                cpu_color = 'green'
+            elif host.cpu_load < 60:
+                cpu_color = 'yellow'
+            elif host.cpu_load < 80:
+                cpu_color = 'dark_orange'
+            else:
+                cpu_color = 'red'
+            
+            table.add_row(
+                f'[dark_orange]{host.identity if host.identity is not None else "-"}', # Host
+                f'[light_steel_blue1]{host.address if host.address is not None else "-"}', # Address
+                f'[slate_blue1]{host.public_address if host.public_address is not None else '-'}', # Public address
+                f'[dark_olive_green3]{host.installed_routeros_version if host.installed_routeros_version is not None else "-"}', # RouterOS
+                f'[medium_purple1]{host.current_firmware_version if host.current_firmware_version is not None else "-"}', # Firmware
+                f'[dodger_blue2]{host.model if host.model is not None else "-"}', # Model
+                f'[{cpu_color}]{host.cpu_load if host.cpu_load is not None else "-"}%', # CPU %
+                f'[cornflower_blue]{host.uptime if host.uptime is not None else "-"}', # Uptime
+            )
         
         console.clear()
         console.print(table)
