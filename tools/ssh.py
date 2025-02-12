@@ -167,6 +167,7 @@ def get_upgradable_hosts(hosts):
         try:
             executor = HostCommandsExecutor(host)
         except TimeoutError:
+            counter += 1
             continue
         else:
             executor.execute_command('/system package update check-for-updates')
