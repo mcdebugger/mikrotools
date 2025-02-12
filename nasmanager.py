@@ -5,10 +5,10 @@ import click
 from tools.config import get_commands, get_hosts
 from tools.outputs import list_outdated_hosts
 from tools.ssh import execute_hosts_commands
-from tools.ssh import get_outdated_hosts, get_upgradable_hosts, upgrade_hosts_prompt
+from tools.ssh import get_outdated_hosts
 from hoststools import backup_configs
 from hoststools.common import list_hosts
-from hoststools.upgrade import upgrade_hosts_firmware_start
+from hoststools.upgrade import upgrade_hosts_firmware_start, upgrade_hosts_routeros_start
 
 @click.group(invoke_without_command=True)
 @click.option('-H', '--host')
@@ -75,16 +75,15 @@ def list(host, inventory_file, config_file):
     hosts = get_hosts()
     list_hosts(hosts)
 
-@cli.command(help='Upgrade routers with outdated firmware')
+@cli.command(help='Upgrade routers with outdated RouterOS')
 @click.option('-H', '--host')
 @click.option('-i', '--inventory-file')
 @click.option('-c', '--config-file', default='settings.yaml')
 def upgrade(host, inventory_file, config_file):
     hosts = get_hosts()
-    upgradable_hosts = get_upgradable_hosts(hosts)
-    upgrade_hosts_prompt(upgradable_hosts)
+    upgrade_hosts_routeros_start(hosts)
 
-@cli.command(help='Upgrade routers with outdated bootloader')
+@cli.command(help='Upgrade routers with outdated firmware')
 @click.option('-H', '--host')
 @click.option('-i', '--inventory-file')
 @click.option('-c', '--config-file', default='settings.yaml')
