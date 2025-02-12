@@ -76,6 +76,9 @@ def list_hosts(addresses):
         
         console.clear()
         console.print(table)
+        
+        console.print(f'[medium_purple1]{"-" * 15}')
+        console.print(f'[cornflower_blue]Total hosts: [dark_olive_green3]{len(addresses)}\n')
 
 def print_reboot_progress(host, counter, total, remaining):
         print(f'\r{fcolors.darkgray}Rebooting {fcolors.lightblue}{host.identity} '
