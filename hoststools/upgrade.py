@@ -227,7 +227,7 @@ def upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts: list[MikrotikHo
             information of a host to be upgraded.
     """
     if len(upgradable_hosts) == 0:
-        print(f'{fcolors.bold}{fcolors.green}No hosts to upgrade firmware{fcolors.default}')
+        print(f'{fcolors.bold}{fcolors.green}No hosts to upgrade RouterOS{fcolors.default}')
         exit()
     
     # Prints the list of hosts that will be upgraded
