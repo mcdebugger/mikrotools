@@ -66,7 +66,7 @@ def list_hosts(addresses):
             table.add_row(
                 f'[dark_orange]{host.identity if host.identity is not None else "-"}', # Host
                 f'[light_steel_blue1]{host.address if host.address is not None else "-"}', # Address
-                f'[slate_blue1]{host.public_address if host.public_address is not None else '-'}', # Public address
+                f'[slate_blue1]{host.public_address if host.public_address is not None else "-"}', # Public address
                 f'[dark_olive_green3]{host.installed_routeros_version if host.installed_routeros_version is not None else "-"}', # RouterOS
                 f'[medium_purple1]{host.current_firmware_version if host.current_firmware_version is not None else "-"}', # Firmware
                 f'[dodger_blue2]{host.model if host.model is not None else "-"}', # Model
