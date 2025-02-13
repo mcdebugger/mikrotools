@@ -1,44 +1,48 @@
 from packaging import version
 
+from netapi import MikrotikSSHClient
+from tools.config import get_config
 from tools.colors import fcolors_256 as fcolors
-from tools.ssh import HostCommandsExecutor
 
 from .models import MikrotikHost
 
 def backup_configs(addresses, sensitive=False):
+    cfg = get_config()
     counter = 1
     
     for address in addresses:
         host = MikrotikHost(address=address)
-        executor = HostCommandsExecutor(address)
-        host.identity = executor.execute_command(':put [/system identity get name]')
-        host.installed_routeros_version = executor.execute_command(':put [/system package update get installed-version]')
-        
-        print_backup_progress(host, counter, len(addresses), len(addresses) - counter + 1)
-        
-        # Exporting current config
-        if sensitive:
-            # Exporting sensitive config
-            if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
-                # RouterOS 7.0+
-                current_config = executor.execute_command('/export show-sensitive')
+        with MikrotikSSHClient(
+                host=address, username=cfg['User'],
+                keyfile=cfg['KeyFile'], port=cfg['Port']
+            ) as device:
+            host.identity = device.get_identity()
+            host.installed_routeros_version = device.get_routeros_installed_version()
+            
+            print_backup_progress(host, counter, len(addresses), len(addresses) - counter + 1)
+            
+            # Exporting current config
+            if sensitive:
+                # Exporting sensitive config
+                if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
+                    # RouterOS 7.0+
+                    current_config = device.execute_command_raw('/export show-sensitive')
+                else:
+                    # RouterOS < 7.0
+                    current_config = device.execute_command_raw('/export')
             else:
-                # RouterOS < 7.0
-                current_config = executor.execute_command('/export')
-        else:
-            # Exporting non-sensitive config
-            if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
-                # RouterOS 7.0+
-                current_config = executor.execute_command('/export')
-            else:
-                # RouterOS < 7.0
-                current_config = executor.execute_command('/export hide-sensitive')
-        
+                # Exporting non-sensitive config
+                if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
+                    # RouterOS 7.0+
+                    current_config = device.execute_command_raw('/export')
+                else:
+                    # RouterOS < 7.0
+                    current_config = device.execute_command_raw('/export hide-sensitive')
+            
         # Writing current config to file
         with open(f'{host.identity}.rsc', 'w') as f:
             f.write(current_config)
         
-        del executor
         counter += 1
     
     print(f'\r{(" " * 80)}', end='\r')
