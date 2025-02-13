@@ -116,6 +116,24 @@ class MikrotikSSHClient():
         
         return output
     
+    def get_identity(self) -> str:
+        """
+        Retrieves the identity of the router.
+
+        Returns:
+            The identity of the router as a string.
+        """
+        return self.get('/system identity', 'name')
+    
+    def get_routeros_installed_version(self) -> str:
+        """
+        Retrieves the currently installed version of RouterOS.
+
+        Returns:
+            The installed version of RouterOS as a string.
+        """
+        return self.get('/system package update', 'installed-version')
+    
     def __enter__(self):
         self.connect()
         return self
