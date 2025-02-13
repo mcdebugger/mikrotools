@@ -45,7 +45,7 @@ def backup_configs(addresses, sensitive=False):
         
         counter += 1
     
-    print(f'\r{(" " * 80)}', end='\r')
+    print(f'\r\033[K', end='\r')
     print(f'{fcolors.bold}{fcolors.green}All hosts backed up successfully!{fcolors.default}')
 
 def print_backup_progress(host, counter, total, remaining):
@@ -53,5 +53,5 @@ def print_backup_progress(host, counter, total, remaining):
         f'{fcolors.blue}({fcolors.yellow}{host.address}{fcolors.blue}) '
         f'{fcolors.red}[{counter}/{total}]'
         f'{fcolors.cyan} Remaining: {fcolors.lightpurple}{remaining}{fcolors.default}'
-        f'{(" " * 10)}',
+        f'\033[K',
         end='')
