@@ -7,7 +7,7 @@ from tools.outputs import list_outdated_hosts
 from tools.ssh import execute_hosts_commands
 from tools.ssh import get_outdated_hosts
 from hoststools import backup_configs
-from hoststools.common import list_hosts
+from hoststools.common import list_hosts, reboot_addresses
 from hoststools.upgrade import upgrade_hosts_firmware_start, upgrade_hosts_routeros_start
 
 class Mutex(click.Option):
@@ -105,6 +105,14 @@ def outdated(min_version, filtered_version, host, inventory_file, config_file, o
 def list(host, inventory_file, config_file):
     hosts = get_hosts()
     list_hosts(hosts)
+
+@cli.command(help='Reboot routers')
+@click.option('-H', '--host')
+@click.option('-i', '--inventory-file')
+@click.option('-c', '--config-file', default='settings.yaml')
+def reboot(host, inventory_file, config_file):
+    addresses = get_hosts()
+    reboot_addresses(addresses)
 
 @cli.command(help='Upgrade routers with outdated RouterOS')
 @click.option('-H', '--host')

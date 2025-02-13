@@ -104,6 +104,21 @@ def print_reboot_progress(host, counter, total, remaining):
               f'\033[K',
               end='')
 
+def reboot_addresses(addresses):
+    hosts = []
+
+    print(f'The following hosts will be rebooted:')
+    for address in addresses:
+        print(f'{fcolors.lightblue}Host: {fcolors.bold}{fcolors.green}{address}{fcolors.default}')
+    
+    answer = input(f'{fcolors.bold}{fcolors.yellow}Would you like to reboot devices now? {fcolors.red}[y/n]{fcolors.default}')
+    
+    if answer.lower() != 'y':
+        exit()
+    else:
+        [hosts.append(MikrotikHost(address=address)) for address in addresses]
+        reboot_hosts(hosts)
+
 def reboot_hosts(hosts):
     counter = 1
     for host in hosts:
