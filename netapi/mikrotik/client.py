@@ -84,7 +84,7 @@ class MikrotikSSHClient():
             path = f'{path} get {obj}'
         else:
             path = f'{path} get'
-        return self.execute_command(f':put [{path}]')[0]
+        return self.execute_command_raw(f':put [{path}]').strip()
     
     def get_dict(self, path: str, obj: str = None) -> list[str]:
         """
