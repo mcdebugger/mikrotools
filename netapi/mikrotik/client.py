@@ -17,6 +17,7 @@ class MikrotikSSHClient():
                 port=self.port,
                 username=self.username, 
                 key_filename=self.keyfile,
+                disabled_algorithms={'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']},
                 timeout=5
             )
             self._connected = True
