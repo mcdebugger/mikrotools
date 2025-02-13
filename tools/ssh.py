@@ -2,6 +2,7 @@ import paramiko
 
 from packaging import version
 
+from netapi import MikrotikSSHClient
 from tools.colors import fcolors_256 as fcolors
 from tools.config import get_config
 
@@ -46,44 +47,26 @@ class HostCommandsExecutor():
             self.ssh.close()
 
 def execute_hosts_commands(hosts, commands):
-    # Getting command from arguments or config file
-    # commands = get_commands()
+    cfg = get_config()
 
     for host in hosts:
         # Printing separator
         print(f'{fcolors.bold}{fcolors.lightblue}{"-"*30}{fcolors.default}')
         print(f'{fcolors.bold}{fcolors.lightblue}Working with host: {fcolors.lightpurple}{host}{fcolors.default}')
         
-        executor = HostCommandsExecutor(host)
-        
-        identity = executor.execute_command(':put [/system identity get name]')
-        print(f'{fcolors.bold}{fcolors.lightblue}Identity: {fcolors.lightpurple}{identity}{fcolors.default}')
-        installed_version = executor.execute_command(':put [/system package update get installed-version]')
-        print(f'{fcolors.bold}{fcolors.lightblue}Installed version: {fcolors.lightpurple}{installed_version}{fcolors.default}')
-        
-        # Executing commands
-        for command in commands:
-            print(f'\n{fcolors.bold}{fcolors.darkgray}Executing command: {command}{fcolors.default}')
-            result = executor.execute_command(command)
-            # Printing execution result
-            print(result)
-        
-        # Deleting executor
-        del executor
-
-def get_installed_version(host):
-    executor = HostCommandsExecutor(host)
-    installed_version = executor.execute_command(':put [/system package update get installed-version]')
-    del executor
-    
-    return installed_version
-
-def get_latest_version(host):
-    executor = HostCommandsExecutor(host)
-    latest_version = executor.execute_command(':put [/system package update get latest-version]')
-    del executor
-    
-    return latest_version
+        with MikrotikSSHClient(host=host, username=cfg['User'], keyfile=cfg['KeyFile'], port=cfg['Port']) as device:
+            
+            identity = device.get_identity()
+            print(f'{fcolors.bold}{fcolors.lightblue}Identity: {fcolors.lightpurple}{identity}{fcolors.default}')
+            installed_version = device.get('/system package update', 'installed-version]')
+            print(f'{fcolors.bold}{fcolors.lightblue}Installed version: {fcolors.lightpurple}{installed_version}{fcolors.default}')
+            
+            # Executing commands
+            for command in commands:
+                print(f'\n{fcolors.bold}{fcolors.darkgray}Executing command: {command}{fcolors.default}')
+                result = device.execute_command_raw(command)
+                # Printing execution result
+                print(result)
 
 def get_outdated_hosts(hosts, min_version, filtered_version):
 
@@ -109,7 +92,11 @@ def get_outdated_hosts(hosts, min_version, filtered_version):
         print_progress(host, counter, len(hosts), len(outdated_hosts), offline)
 
         try:
-            installed_version = get_installed_version(host)
+            with MikrotikSSHClient(
+                host=host, username=get_config()['User'],
+                keyfile=get_config()['KeyFile'],
+                port=get_config()['Port']) as device:
+                installed_version = device.get_routeros_installed_version()
         except TimeoutError:
             offline += 1
             counter += 1
