@@ -5,10 +5,12 @@ from rich.table import Table
 
 from .models import MikrotikHost
 
+from netapi import MikrotikSSHClient
 from tools.colors import fcolors_256 as fcolors
-from tools.ssh import HostCommandsExecutor
+from tools.config import get_config
 
 def list_hosts(addresses):
+    cfg = get_config()
     offline_hosts = 0
     console = Console()
     table = Table(title="[green]List of hosts", show_header=True, header_style="bold grey78", box=SIMPLE)
@@ -30,22 +32,26 @@ def list_hosts(addresses):
         host = MikrotikHost(address=address)
         
         try:
-            executor = HostCommandsExecutor(address)
+            device = MikrotikSSHClient(
+                host=address, username=cfg['User'],
+                keyfile=cfg['KeyFile'],
+                port=cfg['Port'])
+            device.connect()
         except TimeoutError:
             timeout = True
             offline_hosts += 1
         else:
-            host.identity = executor.execute_command(':put [/system identity get name]')
-            host.public_address = executor.execute_command(':put [/ip cloud get public-address]')
-            host.installed_routeros_version = executor.execute_command(':put [/system package update get installed-version]')
-            host.current_firmware_version = executor.execute_command(':put [/system routerboard get current-firmware]')
-            host.model = executor.execute_command(':put [/system routerboard get model]')
-            host.cpu_load = int(executor.execute_command(':put [/system resource get cpu-load]'))
+            host.identity = device.get_identity()
+            host.public_address = device.get('/ip cloud', 'public-address')
+            host.installed_routeros_version = device.get_routeros_installed_version()
+            host.current_firmware_version = device.get('/system routerboard', 'current-firmware')
+            host.model = device.get('/system routerboard', 'model')
+            host.cpu_load = int(device.get('/system resource', 'cpu-load'))
             if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
-                host.uptime = executor.execute_command(':put [/system resource get uptime as-string]')
+                host.uptime = device.get('/system resource', 'uptime as-string')
             else:
-                host.uptime = executor.execute_command(':put [/system resource get uptime]')
-            del executor
+                host.uptime = device.get('/system resource', 'uptime')
+            device.disconnect()
         
         if timeout:
             table.add_row(
@@ -109,6 +115,9 @@ def reboot_hosts(hosts):
     print(f'{fcolors.bold}{fcolors.green}All hosts rebooted successfully!{fcolors.default}')
 
 def reboot_host(host):
-    executor = HostCommandsExecutor(host.address)
-    executor.execute_command('/system reboot')
-    del executor
+    with MikrotikSSHClient(
+            host=host.address, username=get_config()['User'],
+            keyfile=get_config()['KeyFile'],
+            port=get_config()['Port']
+        ) as device:
+        device.execute_command('/system reboot')
