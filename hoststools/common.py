@@ -21,7 +21,7 @@ def list_hosts(addresses):
     table.add_column("RouterOS", justify="left")
     table.add_column("Firmware", justify="left")
     table.add_column("Model", justify="left")
-    table.add_column("CPU %", justify="left")
+    table.add_column("CPU %", justify="right")
     table.add_column("Uptime", justify="left")
     
     console.clear()
