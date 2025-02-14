@@ -1,16 +1,15 @@
 from packaging import version
+from paramiko import AuthenticationException
 from rich.box import SIMPLE
 from rich.console import Console
 from rich.table import Table
 
 from .models import MikrotikHost
 
-from netapi import MikrotikSSHClient
+from netapi import MikrotikManager
 from tools.colors import fcolors_256 as fcolors
-from tools.config import get_config
 
 def list_hosts(addresses):
-    cfg = get_config()
     offline_hosts = 0
     console = Console()
     table = Table(title="[green]List of hosts", show_header=True, header_style="bold grey78", box=SIMPLE)
@@ -28,36 +27,36 @@ def list_hosts(addresses):
     console.print(table)
     
     for address in addresses:
+        auth_error = False
         timeout = False
+        error_message = None
         host = MikrotikHost(address=address)
         
         try:
-            device = MikrotikSSHClient(
-                host=address, username=cfg['User'],
-                keyfile=cfg['KeyFile'],
-                port=cfg['Port'])
-            device.connect()
+            with MikrotikManager.get_connection(address) as device:
+                host.identity = device.get_identity()
+                host.public_address = device.get('/ip cloud', 'public-address')
+                host.installed_routeros_version = device.get_routeros_installed_version()
+                host.current_firmware_version = device.get('/system routerboard', 'current-firmware')
+                host.model = device.get('/system routerboard', 'model')
+                host.cpu_load = int(device.get('/system resource', 'cpu-load'))
+                if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
+                    host.uptime = device.get('/system resource', 'uptime as-string')
+                else:
+                    host.uptime = device.get('/system resource', 'uptime')
         except TimeoutError:
             timeout = True
+            error_message = 'Connection timeout'
             offline_hosts += 1
-        else:
-            host.identity = device.get_identity()
-            host.public_address = device.get('/ip cloud', 'public-address')
-            host.installed_routeros_version = device.get_routeros_installed_version()
-            host.current_firmware_version = device.get('/system routerboard', 'current-firmware')
-            host.model = device.get('/system routerboard', 'model')
-            host.cpu_load = int(device.get('/system resource', 'cpu-load'))
-            if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
-                host.uptime = device.get('/system resource', 'uptime as-string')
-            else:
-                host.uptime = device.get('/system resource', 'uptime')
-            device.disconnect()
+        except AuthenticationException:
+            auth_error = True
+            error_message = 'Authentication failed'
         
-        if timeout:
+        if timeout or auth_error:
             table.add_row(
                 f'[red]{host.identity if host.identity is not None else "-"}', # Host
                 f'[light_steel_blue1]{host.address if host.address is not None else "-"}', # Address
-                f'[red]timeout'
+                f'[red]{error_message if error_message is not None else "-"}'
             )
         else:
             if host.cpu_load is None:
@@ -130,9 +129,5 @@ def reboot_hosts(hosts):
     print(f'{fcolors.bold}{fcolors.green}All hosts rebooted successfully!{fcolors.default}')
 
 def reboot_host(host):
-    with MikrotikSSHClient(
-            host=host.address, username=get_config()['User'],
-            keyfile=get_config()['KeyFile'],
-            port=get_config()['Port']
-        ) as device:
+    with MikrotikManager.get_connection(host.address) as device:
         device.execute_command('/system reboot')
