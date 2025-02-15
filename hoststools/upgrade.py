@@ -1,4 +1,5 @@
 from packaging import version
+from rich.console import Console
 
 from .common import reboot_hosts
 from .models import MikrotikHost
@@ -21,14 +22,28 @@ def is_upgradable(current_version, upgrade_version):
         return version.parse(current_version) < version.parse(upgrade_version)
 
 def print_check_upgradable_progress(host, counter, total, outdated, offline, failed=0):
-        print(f'\r{fcolors.darkgray}Checking host {fcolors.lightblue}{host.identity} '
-              f'{fcolors.cyan}({fcolors.yellow}{host.address}{fcolors.cyan}) '
-              f'{fcolors.red}[{counter}/{total}] '
-              f'{fcolors.lightpurple}| {fcolors.cyan}Upgradable: {fcolors.lightpurple}{outdated}{fcolors.default} '
-              f'{fcolors.lightpurple}| {fcolors.cyan}Offline: {fcolors.red}{offline}{fcolors.default} '
-              f'{fcolors.lightpurple}| {fcolors.cyan}Errors: {fcolors.red}{failed}{fcolors.default}'
-              f'\033[K',
-              end='')
+    console = Console()
+    
+    if offline > 0:
+        offline_color = 'red'
+    else:
+        offline_color = 'green'
+    
+    if failed > 0:
+        failed_color = 'red'
+    else:
+        failed_color = 'green'
+    
+    print('\r\033[K', end='\r')
+    console.print(f'[grey27]Checking host [sky_blue2]'
+                  f'{host.identity if host.identity is not None else "-"} '
+                  f'[cyan]([yellow]{host.address}[cyan]) '
+                  f'[red]\\[{counter}/{total}] '
+                  f'[medium_purple1]| [cyan]Upgradable: [medium_purple1]{outdated} '
+                  f'[medium_purple1]| [cyan]Offline: [{offline_color}]{offline} '
+                  f'[medium_purple1]| [cyan]Errors: [{failed_color}]{failed}',
+                  end=''
+                  )
 
 def print_upgrade_progress(host, counter, total, remaining):
         print(f'\r{fcolors.darkgray}Upgrading {fcolors.lightblue}{host.identity} '
@@ -46,7 +61,6 @@ def get_firmware_upgradable_hosts(addresses):
     
     for address in addresses:
         host = MikrotikHost(address=address)
-        host.identity = '-'
         print_check_upgradable_progress(host, counter, len(addresses), len(upgradable_hosts), offline, failed)
         from time import sleep
         sleep(2)
@@ -83,7 +97,6 @@ def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
     
     for address in addresses:
         host = MikrotikHost(address=address)
-        host.identity = '-'
         print_check_upgradable_progress(host, counter, len(addresses), len(upgradable_hosts), offline, failed)
         try:
             with MikrotikManager.get_connection(address) as device:
