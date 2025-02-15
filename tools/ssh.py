@@ -1,64 +1,18 @@
-import paramiko
-
 from packaging import version
 
-from netapi import MikrotikSSHClient
+from netapi import MikrotikManager
 from tools.colors import fcolors_256 as fcolors
-from tools.config import get_config
-
-class HostCommandsExecutor():
-    def __init__(self, host):
-        self.ssh = None
-        self.command = None
-        
-        # Loading configuration from file
-        cfg = get_config()
-        
-        # Setting variables from configuration file
-        user = cfg['User']
-        port = cfg['Port']
-        keyfile = cfg['KeyFile']
-    
-        # Setting up SSH connection
-        self.__setup_connection(host, user, keyfile, port)
-
-    def __del__(self):
-        # Closing SSH connection
-        self.__close_connection()
-    
-    def execute_command(self, command):
-        stdin, stdout, stderr = self.ssh.exec_command(command)
-        
-        return stdout.read().decode().strip()
-    
-    def __setup_connection(self, host, user, keyfile, port):
-        # Setting up SSH client
-        self.ssh = paramiko.SSHClient()
-        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy)
-        
-        # Connecting to host
-        self.ssh.connect(host, username=user, key_filename=keyfile, port=port,
-                         disabled_algorithms={'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']},
-                         timeout=5)
-    
-    def __close_connection(self):
-        # Closing SSH connection
-        if self.ssh:
-            self.ssh.close()
 
 def execute_hosts_commands(hosts, commands):
-    cfg = get_config()
-
     for host in hosts:
         # Printing separator
         print(f'{fcolors.bold}{fcolors.lightblue}{"-"*30}{fcolors.default}')
         print(f'{fcolors.bold}{fcolors.lightblue}Working with host: {fcolors.lightpurple}{host}{fcolors.default}')
         
-        with MikrotikSSHClient(host=host, username=cfg['User'], keyfile=cfg['KeyFile'], port=cfg['Port']) as device:
-            
+        with MikrotikManager.get_connection(host) as device:
             identity = device.get_identity()
             print(f'{fcolors.bold}{fcolors.lightblue}Identity: {fcolors.lightpurple}{identity}{fcolors.default}')
-            installed_version = device.get('/system package update', 'installed-version]')
+            installed_version = device.get_routeros_installed_version()
             print(f'{fcolors.bold}{fcolors.lightblue}Installed version: {fcolors.lightpurple}{installed_version}{fcolors.default}')
             
             # Executing commands
@@ -92,10 +46,7 @@ def get_outdated_hosts(hosts, min_version, filtered_version):
         print_progress(host, counter, len(hosts), len(outdated_hosts), offline)
 
         try:
-            with MikrotikSSHClient(
-                host=host, username=get_config()['User'],
-                keyfile=get_config()['KeyFile'],
-                port=get_config()['Port']) as device:
+            with MikrotikManager.get_connection(host) as device:
                 installed_version = device.get_routeros_installed_version()
         except TimeoutError:
             offline += 1
@@ -116,13 +67,6 @@ def print_progress(host, counter, total, outdated, offline):
             f'{fcolors.red}[{counter}/{total}] '
             f'{fcolors.cyan}Outdated: {fcolors.lightpurple}{outdated}{fcolors.default} '
             f'{fcolors.cyan}Offline: {fcolors.red}{offline}{fcolors.default}',
-            end='')
-
-def print_upgrade_progress(host, counter, total, remaining):
-        print(f'\r{fcolors.darkgray}Upgrading {fcolors.lightblue}{host["identity"]} {fcolors.blue}({fcolors.yellow}{host["host"]}{fcolors.blue}) '
-            f'{fcolors.red}[{counter}/{total}] '
-            f'{fcolors.cyan}Remaining: {fcolors.lightpurple}{remaining}{fcolors.default}'
-            f'{(" " * 10)}',
             end='')
 
 def check_if_update_applicable(installed_version, min_version, filtered_version=None):
