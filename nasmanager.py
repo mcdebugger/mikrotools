@@ -154,12 +154,14 @@ def reboot(host, port, user, password, inventory_file, config_file):
     reboot_addresses(addresses)
 
 @cli.command(help='Upgrade routers with outdated RouterOS')
+@mikromanager_init
 @common_options
 def upgrade(host, port, user, password, inventory_file, config_file):
     hosts = get_hosts()
     upgrade_hosts_routeros_start(hosts)
 
 @cli.command(help='Upgrade routers with outdated firmware')
+@mikromanager_init
 @common_options
 def upgrade_firmware(host, port, user, password, inventory_file, config_file):
     hosts = get_hosts()

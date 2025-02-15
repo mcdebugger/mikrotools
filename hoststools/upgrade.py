@@ -3,8 +3,8 @@ from packaging import version
 from .common import reboot_hosts
 from .models import MikrotikHost
 
+from netapi import MikrotikManager
 from tools.colors import fcolors_256 as fcolors
-from tools.ssh import HostCommandsExecutor
 
 def is_upgradable(current_version, upgrade_version):
     """
@@ -20,12 +20,13 @@ def is_upgradable(current_version, upgrade_version):
     if current_version and upgrade_version:
         return version.parse(current_version) < version.parse(upgrade_version)
 
-def print_check_upgradable_progress(host, counter, total, outdated, offline):
+def print_check_upgradable_progress(host, counter, total, outdated, offline, failed=0):
         print(f'\r{fcolors.darkgray}Checking host {fcolors.lightblue}{host.identity} '
               f'{fcolors.cyan}({fcolors.yellow}{host.address}{fcolors.cyan}) '
               f'{fcolors.red}[{counter}/{total}] '
               f'{fcolors.lightpurple}| {fcolors.cyan}Upgradable: {fcolors.lightpurple}{outdated}{fcolors.default} '
-              f'{fcolors.lightpurple}| {fcolors.cyan}Offline: {fcolors.red}{offline}{fcolors.default}'
+              f'{fcolors.lightpurple}| {fcolors.cyan}Offline: {fcolors.red}{offline}{fcolors.default} '
+              f'{fcolors.lightpurple}| {fcolors.cyan}Errors: {fcolors.red}{failed}{fcolors.default}'
               f'\033[K',
               end='')
 
@@ -39,28 +40,31 @@ def print_upgrade_progress(host, counter, total, remaining):
 
 def get_firmware_upgradable_hosts(addresses):
     upgradable_hosts = []
+    failed = 0
     offline = 0
     counter = 1
     
     for address in addresses:
         host = MikrotikHost(address=address)
         host.identity = '-'
-        print_check_upgradable_progress(host, counter, len(addresses), len(upgradable_hosts), offline)
+        print_check_upgradable_progress(host, counter, len(addresses), len(upgradable_hosts), offline, failed)
+        from time import sleep
+        sleep(2)
         
         try:
-            executor = HostCommandsExecutor(address)
+            with MikrotikManager.get_connection(address) as device:
+                host.identity = device.get_identity()
+                print_check_upgradable_progress(host, counter, len(addresses), len(upgradable_hosts), offline, failed)
+                host.current_firmware_version = device.get_current_firmware_version()
+                host.upgrade_firmware_version = device.get_upgrade_firmware_version()
         except TimeoutError:
             offline += 1
             counter += 1
             continue
-        else:
-            host.identity = executor.execute_command(':put [/system identity get name]')
-            print_check_upgradable_progress(host, counter, len(addresses), len(upgradable_hosts), offline)
-            
-            host.current_firmware_version = executor.execute_command(':put [/system routerboard get current-firmware]')
-            host.upgrade_firmware_version = executor.execute_command(':put [/system routerboard get upgrade-firmware]')
-
-            del executor
+        except Exception as e:
+            failed += 1
+            counter += 1
+            continue
         
         if is_upgradable(host.current_firmware_version, host.upgrade_firmware_version):
             upgradable_hosts.append(host)
@@ -73,27 +77,29 @@ def get_firmware_upgradable_hosts(addresses):
 
 def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
     upgradable_hosts = []
+    failed = 0
     offline = 0
     counter = 1
     
     for address in addresses:
         host = MikrotikHost(address=address)
         host.identity = '-'
-        print_check_upgradable_progress(host, counter, len(addresses), len(upgradable_hosts), offline)
+        print_check_upgradable_progress(host, counter, len(addresses), len(upgradable_hosts), offline, failed)
         try:
-            executor = HostCommandsExecutor(address)
+            with MikrotikManager.get_connection(address) as device:
+                host.identity = device.get_identity()
+                print_check_upgradable_progress(host, counter, len(addresses), len(upgradable_hosts), offline, failed)
+                device.execute_command_raw('/system package update check-for-updates')
+                host.installed_routeros_version = device.get_routeros_installed_version()
+                host.latest_routeros_version = device.get('/system package update', 'latest-version')
         except TimeoutError:
             offline += 1
             counter += 1
             continue
-        else:
-            host.identity = executor.execute_command(':put [/system identity get name]')
-            print_check_upgradable_progress(host, counter, len(addresses), len(upgradable_hosts), offline)
-            executor.execute_command('/system package update check-for-updates')
-            host.installed_routeros_version = executor.execute_command(':put [/system package update get installed-version]')
-            host.latest_routeros_version = executor.execute_command(':put [/system package update get latest-version]')
-
-            del executor
+        except Exception as e:
+            failed += 1
+            counter += 1
+            continue
         
         if is_upgradable(host.installed_routeros_version, host.latest_routeros_version):
             upgradable_hosts.append(host)
@@ -196,9 +202,11 @@ def upgrade_host_firmware(host):
     :param host: A MikrotikHost object representing the host to upgrade.
     :return: None
     """
-    executor = HostCommandsExecutor(host.address)
-    executor.execute_command('/system routerboard upgrade')
-    del executor
+    try:
+        with MikrotikManager.get_connection(host.address) as device:
+            device.execute_command_raw('/system routerboard upgrade')
+    except Exception as e:
+        pass
 
 def upgrade_hosts_routeros_start(addresses: list[str]) -> None:
     """
@@ -285,7 +293,8 @@ def upgrade_host_routeros(host: MikrotikHost) -> None:
     Returns:
         None
     """
-
-    executor = HostCommandsExecutor(host.address)
-    executor.execute_command('/system package update install')
-    del executor
+    try:
+        with MikrotikManager.get_connection(host.address) as device:
+            device.execute_command_raw('/system package update check-for-updates')
+    except Exception as e:
+        pass
