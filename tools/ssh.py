@@ -2,7 +2,7 @@ import paramiko
 
 from packaging import version
 
-from netapi import MikrotikSSHClient
+from netapi import MikrotikManager
 from tools.colors import fcolors_256 as fcolors
 from tools.config import get_config
 
@@ -47,18 +47,15 @@ class HostCommandsExecutor():
             self.ssh.close()
 
 def execute_hosts_commands(hosts, commands):
-    cfg = get_config()
-
     for host in hosts:
         # Printing separator
         print(f'{fcolors.bold}{fcolors.lightblue}{"-"*30}{fcolors.default}')
         print(f'{fcolors.bold}{fcolors.lightblue}Working with host: {fcolors.lightpurple}{host}{fcolors.default}')
         
-        with MikrotikSSHClient(host=host, username=cfg['User'], keyfile=cfg['KeyFile'], port=cfg['Port']) as device:
-            
+        with MikrotikManager.get_connection(host) as device:
             identity = device.get_identity()
             print(f'{fcolors.bold}{fcolors.lightblue}Identity: {fcolors.lightpurple}{identity}{fcolors.default}')
-            installed_version = device.get('/system package update', 'installed-version]')
+            installed_version = device.get_routeros_installed_version()
             print(f'{fcolors.bold}{fcolors.lightblue}Installed version: {fcolors.lightpurple}{installed_version}{fcolors.default}')
             
             # Executing commands
@@ -92,10 +89,7 @@ def get_outdated_hosts(hosts, min_version, filtered_version):
         print_progress(host, counter, len(hosts), len(outdated_hosts), offline)
 
         try:
-            with MikrotikSSHClient(
-                host=host, username=get_config()['User'],
-                keyfile=get_config()['KeyFile'],
-                port=get_config()['Port']) as device:
+            with MikrotikManager.get_connection(host) as device:
                 installed_version = device.get_routeros_installed_version()
         except TimeoutError:
             offline += 1
