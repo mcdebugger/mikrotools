@@ -124,7 +124,7 @@ class MikrotikSSHClient():
                 output[current_key] += ';' + part.strip()
         
         return output
-    
+        
     def get_identity(self) -> str:
         """
         Retrieves the identity of the router.
@@ -142,6 +142,24 @@ class MikrotikSSHClient():
             The installed version of RouterOS as a string.
         """
         return self.get('/system package update', 'installed-version')
+
+    def get_current_firmware_version(self) -> str:
+        """
+        Retrieves the current firmware version of the router.
+
+        Returns:
+            The current firmware version as a string.
+        """
+        return self.get('/system routerboard', 'current-firmware')
+    
+    def get_upgrade_firmware_version(self) -> str:
+        """
+        Retrieves the upgrade firmware version of the router.
+
+        Returns:
+            The upgrade firmware version as a string.
+        """
+        return self.get('/system routerboard', 'upgrade-firmware')
     
     def __enter__(self):
         self.connect()
