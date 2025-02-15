@@ -62,8 +62,6 @@ def get_firmware_upgradable_hosts(addresses):
     for address in addresses:
         host = MikrotikHost(address=address)
         print_check_upgradable_progress(host, counter, len(addresses), len(upgradable_hosts), offline, failed)
-        from time import sleep
-        sleep(2)
         
         try:
             with MikrotikManager.get_connection(address) as device:
