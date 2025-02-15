@@ -1,7 +1,17 @@
 import click
 import yaml
 
+from dataclasses import dataclass
+
 from tools.args import parse_args
+
+@dataclass(frozen=False)
+class Config:
+    port: int
+    user: str
+    password: str = None
+    keyfile: str = None
+    inventory_file: str = None
 
 def get_commands():
     ctx = click.get_current_context()
@@ -23,14 +33,24 @@ def get_commands_from_file(filename):
 def get_config():
     ctx = click.get_current_context()
     if ctx.params['config_file']:
-        filename = ctx.params['config_file']
+        path = ctx.params['config_file']
     else:
-        filename = 'settings.yaml'
+        path = 'settings.yaml'
     
     # Getting config from YAML file
-    cfg = load_cfg_from_file(filename)
+    yaml_data = load_cfg_from_file(path)
     
-    return cfg
+    return yaml_data
+
+def load_config(path) -> Config:
+    yaml_data = load_cfg_from_file(path)
+    config = Config(
+        port=yaml_data['Port'],
+        user=yaml_data['User'],
+        keyfile=yaml_data['KeyFile'],
+        inventory_file=yaml_data['HostsFile']
+    )
+    return config
 
 def get_hosts():
     ctx = click.get_current_context()

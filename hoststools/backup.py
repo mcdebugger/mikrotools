@@ -1,52 +1,68 @@
 from packaging import version
+from rich.console import Console
 
-from netapi import MikrotikSSHClient
-from tools.config import get_config
+from netapi import MikrotikManager
 from tools.colors import fcolors_256 as fcolors
 
 from .models import MikrotikHost
 
+def get_device_config(host, device, sensitive=False):
+    # Exporting current config
+    if sensitive:
+        # Exporting sensitive config
+        if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
+            # RouterOS 7.0+
+            current_config = device.execute_command_raw('/export show-sensitive')
+        else:
+            # RouterOS < 7.0
+            current_config = device.execute_command_raw('/export')
+    else:
+        # Exporting non-sensitive config
+        if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
+            # RouterOS 7.0+
+            current_config = device.execute_command_raw('/export')
+        else:
+            # RouterOS < 7.0
+            current_config = device.execute_command_raw('/export hide-sensitive')
+        
+        return current_config
+
 def backup_configs(addresses, sensitive=False):
-    cfg = get_config()
     counter = 1
+    failed_hosts = []
     
     for address in addresses:
         host = MikrotikHost(address=address)
-        with MikrotikSSHClient(
-                host=address, username=cfg['User'],
-                keyfile=cfg['KeyFile'], port=cfg['Port']
-            ) as device:
-            host.identity = device.get_identity()
-            host.installed_routeros_version = device.get_routeros_installed_version()
-            
-            print_backup_progress(host, counter, len(addresses), len(addresses) - counter + 1)
-            
-            # Exporting current config
-            if sensitive:
-                # Exporting sensitive config
-                if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
-                    # RouterOS 7.0+
-                    current_config = device.execute_command_raw('/export show-sensitive')
-                else:
-                    # RouterOS < 7.0
-                    current_config = device.execute_command_raw('/export')
-            else:
-                # Exporting non-sensitive config
-                if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
-                    # RouterOS 7.0+
-                    current_config = device.execute_command_raw('/export')
-                else:
-                    # RouterOS < 7.0
-                    current_config = device.execute_command_raw('/export hide-sensitive')
-            
+        try:
+            with MikrotikManager.get_connection(host=address) as device:
+                host.identity = device.get_identity()
+                host.installed_routeros_version = device.get_routeros_installed_version()
+                
+                print_backup_progress(host, counter, len(addresses), len(addresses) - counter + 1)
+                
+                current_config = get_device_config(host, device, sensitive)
+        except Exception as e:
+            failed_hosts.append(host)
+            continue
+        
         # Writing current config to file
         with open(f'{host.identity}.rsc', 'w') as f:
             f.write(current_config)
         
         counter += 1
     
+    console = Console(highlight=False)
     print(f'\r\033[K', end='\r')
-    print(f'{fcolors.bold}{fcolors.green}All hosts backed up successfully!{fcolors.default}')
+
+    if len(failed_hosts) > 0:
+        console.print(f'[bold orange1]Backup completed with errors!\n'
+                       f'[bold gold1]Backed up {len(addresses) - len(failed_hosts)} '
+                       f'hosts out of {len(addresses)}\n')
+        console.print(f'[bold red3]The following hosts failed to backup:')
+        for host in failed_hosts:
+            console.print(f'[thistle1]{host.address}')
+    else:
+        console.print(f'[bold green]All hosts backed up successfully!')
 
 def print_backup_progress(host, counter, total, remaining):
     print(f'\r{fcolors.darkgray}Backing up {fcolors.lightblue}{host.identity} '

@@ -2,13 +2,16 @@
 
 import click
 
-from tools.config import get_commands, get_hosts
+from functools import wraps
+
+from tools.config import get_commands, get_hosts, load_config
 from tools.outputs import list_outdated_hosts
 from tools.ssh import execute_hosts_commands
 from tools.ssh import get_outdated_hosts
 from hoststools import backup_configs
 from hoststools.common import list_hosts, reboot_addresses
 from hoststools.upgrade import upgrade_hosts_firmware_start, upgrade_hosts_routeros_start
+from netapi import MikrotikManager
 
 class Mutex(click.Option):
     def __init__(self, *args, **kwargs):
@@ -28,6 +31,45 @@ class Mutex(click.Option):
                     self.required = False
         return super(Mutex, self).handle_parse_result(ctx, opts, args)
 
+def common_options(func):
+    @click.option('-H', '--host', help='Target host')
+    @click.option('-P', '--port', type=int, help='SSH port')
+    @click.option('-u', '--user', help='Username')
+    @click.option('-p', '--password', is_flag=True, help='Prompt for password')
+    @click.option('-c', '--config-file', default='settings.yaml')
+    @click.option('-i', '--inventory-file')
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        return func(*args, **kwargs)
+    return wrapper
+
+def mikromanager_init(f):
+    @wraps(f)
+    def wrapper(*args, **kwargs):
+        port, user, password, config_file, inventory_file = map(
+            kwargs.get, ['port', 'user', 'password', 'config_file', 'inventory_file']
+        )
+        
+        config = load_config(config_file)
+    
+        if port is not None:
+            config.port = int(port)
+        if user is not None:
+            config.user = user
+        if password:
+            config.keyfile = None
+            # Password prompt
+            config.password = click.prompt('Password', hide_input=True)
+        if inventory_file is not None:
+            config.inventory_file = inventory_file
+        
+        # Configuring MikrotikManager
+        MikrotikManager.configure(config)
+        
+        return f(*args, **kwargs)
+    
+    return wrapper
+
 def validate_commands(ctx, param, values):
     execute_command = ctx.params.get('execute_command')
     commands_file = ctx.params.get('commands_file')
@@ -41,17 +83,19 @@ def validate_commands(ctx, param, values):
     return values
 
 @click.group(invoke_without_command=True, context_settings=dict(help_option_names=['-h', '--help']))
-@click.option('-H', '--host')
 @click.option('-e', '--execute-command', cls=Mutex, not_required_if=['commands_file'])
-@click.option('-i', '--inventory-file')
-@click.option('-c', '--config-file', default='settings.yaml')
 @click.option('-C', '--commands-file', cls=Mutex, not_required_if=['execute_command'])
+@common_options
 @click.pass_context
-def cli(ctx, host, execute_command, inventory_file, config_file, commands_file):
+def cli(ctx, host, port, user, password, execute_command, inventory_file, config_file, commands_file):
+    # Invoking default command
     if ctx.invoked_subcommand is None:
         validate_commands(ctx, None, None)
-        ctx.invoke(exec,
+        ctx.invoke(execute,
                    host=host,
+                   port=port,
+                   user=user,
+                   password=password,
                    execute_command=execute_command,
                    inventory_file=inventory_file,
                    config_file=config_file,
@@ -59,20 +103,18 @@ def cli(ctx, host, execute_command, inventory_file, config_file, commands_file):
 
 @cli.command(help='Backup configs from hosts')
 @click.option('-s', '--sensitive', is_flag=True, default=False)
-@click.option('-H', '--host')
-@click.option('-i', '--inventory-file')
-@click.option('-c', '--config-file', default='settings.yaml')
-def backup(sensitive, host, inventory_file, config_file):
+@mikromanager_init
+@common_options
+def backup(sensitive, host, port, user, password, inventory_file, config_file):
     hosts = get_hosts()
     backup_configs(hosts, sensitive=sensitive)
 
-@cli.command(help='Execute commands on hosts')
-@click.option('-H', '--host')
-@click.option('-e', '--execute-command', required=True, cls=Mutex, not_required_if=['commands_file'])
-@click.option('-i', '--inventory-file')
-@click.option('-c', '--config-file', default='settings.yaml')
-@click.option('-C', '--commands-file', required=True, cls=Mutex, not_required_if=['execute_command'])
-def exec(host, execute_command, inventory_file, config_file, commands_file):
+@cli.command(name='exec', help='Execute commands on hosts')
+@click.option('-e', '--execute-command', cls=Mutex, not_required_if=['commands_file'])
+@click.option('-C', '--commands-file', cls=Mutex, not_required_if=['execute_command'])
+@mikromanager_init
+@common_options
+def execute(host, port, user, password, execute_command, inventory_file, config_file, commands_file):
     hosts = get_hosts()
     
     # Getting command from arguments or config file
@@ -85,10 +127,9 @@ def exec(host, execute_command, inventory_file, config_file, commands_file):
 @click.argument('min-version')
 @click.argument('filtered-version', required=False)
 @click.option('-o', '--output-file', required=False)
-@click.option('-H', '--host')
-@click.option('-i', '--inventory-file')
-@click.option('-c', '--config-file', default='settings.yaml')
-def outdated(min_version, filtered_version, host, inventory_file, config_file, output_file):
+@mikromanager_init
+@common_options
+def outdated(min_version, filtered_version, host, port, user, password, inventory_file, config_file, output_file):
     hosts = get_hosts()
     outdated_hosts = get_outdated_hosts(hosts, min_version, filtered_version)
     if output_file:
@@ -98,35 +139,31 @@ def outdated(min_version, filtered_version, host, inventory_file, config_file, o
     else:
         list_outdated_hosts(outdated_hosts)
 
-@cli.command(help='List routers')
-@click.option('-H', '--host')
-@click.option('-i', '--inventory-file')
-@click.option('-c', '--config-file', default='settings.yaml')
-def list(host, inventory_file, config_file):
+@cli.command(name='list', help='List routers')
+@mikromanager_init
+@common_options
+def list_routers(host, port, user, password, inventory_file, config_file):
     hosts = get_hosts()
     list_hosts(hosts)
 
 @cli.command(help='Reboot routers')
-@click.option('-H', '--host')
-@click.option('-i', '--inventory-file')
-@click.option('-c', '--config-file', default='settings.yaml')
-def reboot(host, inventory_file, config_file):
+@mikromanager_init
+@common_options
+def reboot(host, port, user, password, inventory_file, config_file):
     addresses = get_hosts()
     reboot_addresses(addresses)
 
 @cli.command(help='Upgrade routers with outdated RouterOS')
-@click.option('-H', '--host')
-@click.option('-i', '--inventory-file')
-@click.option('-c', '--config-file', default='settings.yaml')
-def upgrade(host, inventory_file, config_file):
+@mikromanager_init
+@common_options
+def upgrade(host, port, user, password, inventory_file, config_file):
     hosts = get_hosts()
     upgrade_hosts_routeros_start(hosts)
 
 @cli.command(help='Upgrade routers with outdated firmware')
-@click.option('-H', '--host')
-@click.option('-i', '--inventory-file')
-@click.option('-c', '--config-file', default='settings.yaml')
-def upgrade_firmware(host, inventory_file, config_file):
+@mikromanager_init
+@common_options
+def upgrade_firmware(host, port, user, password, inventory_file, config_file):
     hosts = get_hosts()
     upgrade_hosts_firmware_start(hosts)
 

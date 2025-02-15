@@ -1,24 +1,32 @@
 import paramiko
 
 class MikrotikSSHClient():
-    def __init__(self, host: str, username: str, keyfile: str, port: int = 22):
-        self.host = host
-        self.port = port
-        self.username = username
-        self.keyfile = keyfile
+    def __init__(self, host: str, username: str, password: str = None, keyfile: str = None, port: int = 22):
+        self._host = host
+        self._port = port
+        self._username = username
+        self._password = password
+        self._keyfile = keyfile
         self._ssh = paramiko.SSHClient()
         self._ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self._connected = False
     
     def connect(self) -> None:
+        if self._password and not self._keyfile:
+            look_for_keys = False
+        else:
+            look_for_keys = True
+        
         try:
             self._ssh.connect(
-                self.host,
-                port=self.port,
-                username=self.username, 
-                key_filename=self.keyfile,
+                self._host,
+                port=self._port,
+                username=self._username,
+                password=self._password,
+                key_filename=self._keyfile,
                 disabled_algorithms={'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']},
-                timeout=5
+                timeout=5,
+                look_for_keys=look_for_keys
             )
             self._connected = True
         except Exception as e:
@@ -116,7 +124,7 @@ class MikrotikSSHClient():
                 output[current_key] += ';' + part.strip()
         
         return output
-    
+        
     def get_identity(self) -> str:
         """
         Retrieves the identity of the router.
@@ -134,6 +142,24 @@ class MikrotikSSHClient():
             The installed version of RouterOS as a string.
         """
         return self.get('/system package update', 'installed-version')
+
+    def get_current_firmware_version(self) -> str:
+        """
+        Retrieves the current firmware version of the router.
+
+        Returns:
+            The current firmware version as a string.
+        """
+        return self.get('/system routerboard', 'current-firmware')
+    
+    def get_upgrade_firmware_version(self) -> str:
+        """
+        Retrieves the upgrade firmware version of the router.
+
+        Returns:
+            The upgrade firmware version as a string.
+        """
+        return self.get('/system routerboard', 'upgrade-firmware')
     
     def __enter__(self):
         self.connect()

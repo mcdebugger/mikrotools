@@ -1,16 +1,17 @@
 from packaging import version
+from paramiko import AuthenticationException
+from rich import print as rprint
 from rich.box import SIMPLE
 from rich.console import Console
+from rich.prompt import Confirm
 from rich.table import Table
 
 from .models import MikrotikHost
 
-from netapi import MikrotikSSHClient
+from netapi import MikrotikManager
 from tools.colors import fcolors_256 as fcolors
-from tools.config import get_config
 
 def list_hosts(addresses):
-    cfg = get_config()
     offline_hosts = 0
     console = Console()
     table = Table(title="[green]List of hosts", show_header=True, header_style="bold grey78", box=SIMPLE)
@@ -28,36 +29,36 @@ def list_hosts(addresses):
     console.print(table)
     
     for address in addresses:
+        auth_error = False
         timeout = False
+        error_message = None
         host = MikrotikHost(address=address)
         
         try:
-            device = MikrotikSSHClient(
-                host=address, username=cfg['User'],
-                keyfile=cfg['KeyFile'],
-                port=cfg['Port'])
-            device.connect()
+            with MikrotikManager.get_connection(address) as device:
+                host.identity = device.get_identity()
+                host.public_address = device.get('/ip cloud', 'public-address')
+                host.installed_routeros_version = device.get_routeros_installed_version()
+                host.current_firmware_version = device.get('/system routerboard', 'current-firmware')
+                host.model = device.get('/system routerboard', 'model')
+                host.cpu_load = int(device.get('/system resource', 'cpu-load'))
+                if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
+                    host.uptime = device.get('/system resource', 'uptime as-string')
+                else:
+                    host.uptime = device.get('/system resource', 'uptime')
         except TimeoutError:
             timeout = True
+            error_message = 'Connection timeout'
             offline_hosts += 1
-        else:
-            host.identity = device.get_identity()
-            host.public_address = device.get('/ip cloud', 'public-address')
-            host.installed_routeros_version = device.get_routeros_installed_version()
-            host.current_firmware_version = device.get('/system routerboard', 'current-firmware')
-            host.model = device.get('/system routerboard', 'model')
-            host.cpu_load = int(device.get('/system resource', 'cpu-load'))
-            if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
-                host.uptime = device.get('/system resource', 'uptime as-string')
-            else:
-                host.uptime = device.get('/system resource', 'uptime')
-            device.disconnect()
+        except AuthenticationException:
+            auth_error = True
+            error_message = 'Authentication failed'
         
-        if timeout:
+        if timeout or auth_error:
             table.add_row(
                 f'[red]{host.identity if host.identity is not None else "-"}', # Host
                 f'[light_steel_blue1]{host.address if host.address is not None else "-"}', # Address
-                f'[red]timeout'
+                f'[red]{error_message if error_message is not None else "-"}'
             )
         else:
             if host.cpu_load is None:
@@ -97,42 +98,57 @@ def list_hosts(addresses):
                       f'\n')
 
 def print_reboot_progress(host, counter, total, remaining):
-        print(f'\r{fcolors.darkgray}Rebooting {fcolors.lightblue}{host.identity} '
-              f'{fcolors.blue}({fcolors.yellow}{host.address}{fcolors.blue}) '
-              f'{fcolors.red}[{counter}/{total}] '
-              f'{fcolors.cyan}Remaining: {fcolors.lightpurple}{remaining}{fcolors.default}'
-              f'\033[K',
-              end='')
+    # Clears the current line
+    print('\r\033[K', end='')
+    # Prints the reboot progress
+    rprint(f'[grey27]Rebooting [sky_blue2]{host.identity if host.identity is not None else "-"} '
+            f'[blue]([yellow]{host.address}[blue]) '
+            f'[red]\\[{counter}/{total}] '
+            f'[cyan]Remaining: [medium_purple1]{remaining}',
+            end=''
+    )
 
 def reboot_addresses(addresses):
     hosts = []
 
     print(f'The following hosts will be rebooted:')
     for address in addresses:
-        print(f'{fcolors.lightblue}Host: {fcolors.bold}{fcolors.green}{address}{fcolors.default}')
+        rprint(f'[light_slate_blue]Host: [bold sky_blue1]{address}')
     
-    answer = input(f'{fcolors.bold}{fcolors.yellow}Would you like to reboot devices now? {fcolors.red}[y/n]{fcolors.default}')
-    
-    if answer.lower() != 'y':
+    is_reboot_confirmed = Confirm.ask(f'[bold yellow]Would you like to reboot devices now?[/] '
+                                      f'[bold red]\\[y/n][/]', show_choices=False)
+
+    if not is_reboot_confirmed:
         exit()
     else:
         [hosts.append(MikrotikHost(address=address)) for address in addresses]
         reboot_hosts(hosts)
 
 def reboot_hosts(hosts):
+    failed = 0
+    failed_hosts = []
     counter = 1
+    console = Console(highlight=False)
+    
     for host in hosts:
         print_reboot_progress(host, counter, len(hosts), len(hosts) - counter + 1)
-        reboot_host(host)
+        try:
+            reboot_host(host)
+        except Exception as e:
+            failed += 1
+            failed_hosts.append(host)
         counter += 1
     
     print(f'\r\033[K', end='\r')
-    print(f'{fcolors.bold}{fcolors.green}All hosts rebooted successfully!{fcolors.default}')
+    print('')
+    if failed > 0:
+        console.print(f'[bold orange1]Rebooted {len(hosts) - failed} hosts out of {len(hosts)}!\n')
+        console.print(f'[bold red3]The following hosts failed to reboot:')
+        for host in failed_hosts:
+            console.print(f'[grey78]{host.address}')
+        exit()
+    rprint(f'[bold green]All hosts rebooted successfully!')
 
 def reboot_host(host):
-    with MikrotikSSHClient(
-            host=host.address, username=get_config()['User'],
-            keyfile=get_config()['KeyFile'],
-            port=get_config()['Port']
-        ) as device:
+    with MikrotikManager.get_connection(host.address) as device:
         device.execute_command('/system reboot')
