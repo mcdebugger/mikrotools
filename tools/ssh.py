@@ -1,50 +1,7 @@
-import paramiko
-
 from packaging import version
 
 from netapi import MikrotikManager
 from tools.colors import fcolors_256 as fcolors
-from tools.config import get_config
-
-class HostCommandsExecutor():
-    def __init__(self, host):
-        self.ssh = None
-        self.command = None
-        
-        # Loading configuration from file
-        cfg = get_config()
-        
-        # Setting variables from configuration file
-        user = cfg['User']
-        port = cfg['Port']
-        keyfile = cfg['KeyFile']
-    
-        # Setting up SSH connection
-        self.__setup_connection(host, user, keyfile, port)
-
-    def __del__(self):
-        # Closing SSH connection
-        self.__close_connection()
-    
-    def execute_command(self, command):
-        stdin, stdout, stderr = self.ssh.exec_command(command)
-        
-        return stdout.read().decode().strip()
-    
-    def __setup_connection(self, host, user, keyfile, port):
-        # Setting up SSH client
-        self.ssh = paramiko.SSHClient()
-        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy)
-        
-        # Connecting to host
-        self.ssh.connect(host, username=user, key_filename=keyfile, port=port,
-                         disabled_algorithms={'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']},
-                         timeout=5)
-    
-    def __close_connection(self):
-        # Closing SSH connection
-        if self.ssh:
-            self.ssh.close()
 
 def execute_hosts_commands(hosts, commands):
     for host in hosts:
