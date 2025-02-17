@@ -1,31 +1,32 @@
 import click
 import yaml
 
-from dataclasses import dataclass
+from pydantic import BaseModel
 
-from tools.args import parse_args
+class Base (BaseModel):
+    pass
 
-@dataclass
-class JumpHost:
-    address: str
-    port: int
-    username: str
+class Inventory(Base):
+    hostsFile: str = None
+
+class JumpHost(Base):
+    address: str = None
+    port: int = None
+    username: str = None
     password: str = None
     keyfile: str = None
 
-@dataclass
-class SSHConfig:
+class SSHConfig(Base):
     port: int
-    username: str
+    username: str = None
     password: str = None
     keyfile: str = None
     jump: bool = False
     jumphost: JumpHost = None
 
-@dataclass(frozen=False)
-class Config:
+class Config(Base):
     ssh: SSHConfig
-    inventory_file: str = None
+    inventory: Inventory = None
 
 def get_commands():
     ctx = click.get_current_context()
@@ -46,15 +47,8 @@ def get_commands_from_file(filename):
 
 def load_config(path) -> Config:
     yaml_data = load_cfg_from_file(path)
-    config = Config(
-        inventory_file=yaml_data['inventory']['hosts-file'],
-        ssh=SSHConfig(
-            port=yaml_data['ssh']['port'],
-            username=yaml_data['ssh']['user'],
-            keyfile=yaml_data['ssh']['keyfile']
-        )
-    )
-    return config
+    
+    return Config(**yaml_data)
 
 def get_hosts():
     ctx = click.get_current_context()
@@ -65,7 +59,7 @@ def get_hosts():
     else:
         # Getting config from YAML file
         config = load_config(ctx.params['config_file'])
-        hosts = read_hosts_from_file(config.inventory_file)
+        hosts = read_hosts_from_file(config.inventory.hostsFile)
     
     return hosts
 
