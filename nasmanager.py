@@ -46,11 +46,7 @@ def common_options(func):
 
 def mikromanager_init(f):
     @wraps(f)
-    def wrapper(*args, **kwargs):
-        port, user, password, config_file, inventory_file = map(
-            kwargs.get, ['port', 'user', 'password', 'config_file', 'inventory_file']
-        )
-        
+    def wrapper(port, user, password, config_file, inventory_file, jump, *args, **kwargs):
         config = load_config(config_file)
     
         if port is not None:
@@ -63,6 +59,8 @@ def mikromanager_init(f):
             config.ssh.password = click.prompt('Password', hide_input=True)
         if inventory_file is not None:
             config.inventory_file = inventory_file
+        if jump:
+            config.ssh.jump = True
         
         # Configuring MikrotikManager
         MikrotikManager.configure(config)
