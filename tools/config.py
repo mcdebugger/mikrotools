@@ -14,13 +14,13 @@ class Inventory(Base):
 
 class JumpHost(Base):
     address: str = None
-    port: int = None
+    port: int = 22
     username: str = None
     password: str = None
     keyfile: str = None
 
 class SSHConfig(Base):
-    port: int = None
+    port: int = 22
     username: str = None
     password: str = None
     keyfile: str = None
@@ -49,7 +49,11 @@ def get_commands_from_file(filename):
         return commands
 
 def load_config(path) -> Config:
-    yaml_data = load_cfg_from_file(path)
+    try:
+        yaml_data = load_cfg_from_file(path)
+    except FileNotFoundError:
+        logger.warning(f'Config file not found: {path}')
+        yaml_data = None
     
     if yaml_data is not None:
         config = Config(**yaml_data)
@@ -68,7 +72,14 @@ def get_hosts():
     else:
         # Getting config from YAML file
         config = load_config(ctx.params['config_file'])
-        hosts = read_hosts_from_file(config.inventory.hostsFile)
+        try:
+            hosts = read_hosts_from_file(config.inventory.hostsFile)
+        except TypeError:
+            logger.error('Inventory file or host address is not specified')
+            exit(1)
+        except FileNotFoundError:
+            logger.error(f'Inventory file not found: {config.inventory.hostsFile}')
+            exit(1)
     
     return hosts
 
