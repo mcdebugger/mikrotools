@@ -1,7 +1,10 @@
 import click
+import logging
 import yaml
 
 from pydantic import BaseModel
+
+logger = logging.getLogger(__name__)
 
 class Base (BaseModel):
     pass
@@ -22,11 +25,11 @@ class SSHConfig(Base):
     password: str = None
     keyfile: str = None
     jump: bool = False
-    jumphost: JumpHost = None
+    jumphost: JumpHost = JumpHost()
 
 class Config(Base):
-    ssh: SSHConfig = None
-    inventory: Inventory = None
+    ssh: SSHConfig = SSHConfig()
+    inventory: Inventory = Inventory()
 
 def get_commands():
     ctx = click.get_current_context()
@@ -48,7 +51,13 @@ def get_commands_from_file(filename):
 def load_config(path) -> Config:
     yaml_data = load_cfg_from_file(path)
     
-    return Config(**yaml_data)
+    if yaml_data is not None:
+        config = Config(**yaml_data)
+    else:
+        config = Config()
+        
+    logger.debug(f'Config: {config}')
+    return config
 
 def get_hosts():
     ctx = click.get_current_context()
