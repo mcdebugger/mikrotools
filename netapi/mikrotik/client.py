@@ -41,7 +41,7 @@ class MikrotikSSHClient():
                     key_filename=self._keyfile,
                     disabled_algorithms=disabled_algorithms,
                     timeout=timeout,
-                    look_for_keys=True
+                    look_for_keys=False
                 )
                 self._connected = True
             except Exception as e:
