@@ -49,6 +49,7 @@ def common_options(func):
 def mikromanager_init(f):
     @wraps(f)
     def wrapper(port, user, password, config_file, inventory_file, jump, *args, **kwargs):
+        logger = logging.getLogger(__name__)
         config = load_config(config_file)
     
         if port is not None:
@@ -63,6 +64,8 @@ def mikromanager_init(f):
             config.inventory_file = inventory_file
         if jump:
             config.ssh.jump = True
+        
+        logger.debug(f'Config after applying command line options: {config}')
         
         # Configuring MikrotikManager
         MikrotikManager.configure(config)

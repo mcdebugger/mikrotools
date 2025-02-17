@@ -60,7 +60,7 @@ def load_config(path) -> Config:
     else:
         config = Config()
         
-    logger.debug(f'Config: {config}')
+    logger.debug(f'Config loaded from YAML: {config}')
     return config
 
 def get_hosts():
