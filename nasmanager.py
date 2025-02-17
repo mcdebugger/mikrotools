@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import click
+import logging
 
 from functools import wraps
 
@@ -39,6 +40,7 @@ def common_options(func):
     @click.option('-c', '--config-file', default='settings.yaml')
     @click.option('-i', '--inventory-file')
     @click.option('-j', '--jump', is_flag=True, help='Use jump host')
+    @click.option('-d', '--debug', is_flag=True, help='Enable debug mode')
     @wraps(func)
     def wrapper(*args, **kwargs):
         return func(*args, **kwargs)
@@ -69,6 +71,18 @@ def mikromanager_init(f):
     
     return wrapper
 
+def setup_logging(debug):
+    if debug:
+        level = logging.DEBUG
+    else:
+        level = logging.INFO
+    
+    logging.basicConfig(
+        level=level,
+        format='%(asctime)s [%(levelname)s] %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
+
 def validate_commands(ctx, param, values):
     execute_command = ctx.params.get('execute_command')
     commands_file = ctx.params.get('commands_file')
@@ -87,6 +101,9 @@ def validate_commands(ctx, param, values):
 @common_options
 @click.pass_context
 def cli(ctx, *args, **kwargs):
+    # Setting up logging
+    setup_logging(ctx.params['debug'])
+    
     # Invoking default command
     if ctx.invoked_subcommand is None:
         validate_commands(ctx, None, None)
