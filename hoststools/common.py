@@ -29,8 +29,7 @@ def list_hosts(addresses):
     console.print(table)
     
     for address in addresses:
-        auth_error = False
-        timeout = False
+        failed = False
         error_message = None
         host = MikrotikHost(address=address)
         
@@ -47,14 +46,17 @@ def list_hosts(addresses):
                 else:
                     host.uptime = device.get('/system resource', 'uptime')
         except TimeoutError:
-            timeout = True
+            failed = True
             error_message = 'Connection timeout'
             offline_hosts += 1
         except AuthenticationException:
-            auth_error = True
+            failed = True
             error_message = 'Authentication failed'
+        except Exception as e:
+            failed = True
+            error_message = str(e)
         
-        if timeout or auth_error:
+        if failed:
             table.add_row(
                 f'[red]{host.identity if host.identity is not None else "-"}', # Host
                 f'[light_steel_blue1]{host.address if host.address is not None else "-"}', # Address
