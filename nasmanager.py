@@ -5,7 +5,8 @@ import logging
 
 from functools import wraps
 
-from tools.config import get_commands, get_hosts, load_config
+from config import get_config, load_config
+from tools.config import get_commands, get_hosts
 from tools.outputs import list_outdated_hosts
 from tools.ssh import execute_hosts_commands
 from tools.ssh import get_outdated_hosts
@@ -50,7 +51,8 @@ def mikromanager_init(f):
     @wraps(f)
     def wrapper(port, user, password, config_file, inventory_file, jump, *args, **kwargs):
         logger = logging.getLogger(__name__)
-        config = load_config(config_file)
+        load_config(config_file)
+        config = get_config()
     
         if port is not None:
             config.ssh.port = int(port)
