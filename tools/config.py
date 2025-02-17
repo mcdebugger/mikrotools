@@ -17,7 +17,7 @@ class JumpHost(Base):
     keyfile: str = None
 
 class SSHConfig(Base):
-    port: int
+    port: int = None
     username: str = None
     password: str = None
     keyfile: str = None
