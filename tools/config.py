@@ -45,10 +45,10 @@ def get_config():
 def load_config(path) -> Config:
     yaml_data = load_cfg_from_file(path)
     config = Config(
-        port=yaml_data['Port'],
-        user=yaml_data['User'],
-        keyfile=yaml_data['KeyFile'],
-        inventory_file=yaml_data['HostsFile']
+        port=yaml_data['ssh']['port'],
+        user=yaml_data['ssh']['user'],
+        keyfile=yaml_data['ssh']['keyfile'],
+        inventory_file=yaml_data['inventory']['hosts-file']
     )
     return config
 
@@ -60,9 +60,8 @@ def get_hosts():
         hosts = read_hosts_from_file(ctx.params['inventory_file'])
     else:
         # Getting config from YAML file
-        cfg = get_config()
-        hostsfile = cfg['HostsFile']
-        hosts = read_hosts_from_file(hostsfile)
+        config = load_config(ctx.params['config_file'])
+        hosts = read_hosts_from_file(config.inventory_file)
     
     return hosts
 
