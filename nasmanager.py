@@ -100,7 +100,7 @@ def cli(ctx, *args, **kwargs):
 @common_options
 def backup(sensitive, *args, **kwargs):
     hosts = get_hosts()
-    backup_configs(hosts, sensitive=sensitive)
+    backup_configs(hosts, sensitive)
 
 @cli.command(name='exec', help='Execute commands on hosts')
 @click.option('-e', '--execute-command', cls=Mutex, not_required_if=['commands_file'])
