@@ -54,13 +54,13 @@ def mikromanager_init(f):
         config = load_config(config_file)
     
         if port is not None:
-            config.port = int(port)
+            config.ssh.port = int(port)
         if user is not None:
-            config.user = user
+            config.ssh.username = user
         if password:
-            config.keyfile = None
+            config.ssh.keyfile = None
             # Password prompt
-            config.password = click.prompt('Password', hide_input=True)
+            config.ssh.password = click.prompt('Password', hide_input=True)
         if inventory_file is not None:
             config.inventory_file = inventory_file
         

@@ -5,12 +5,26 @@ from dataclasses import dataclass
 
 from tools.args import parse_args
 
-@dataclass(frozen=False)
-class Config:
+@dataclass
+class JumpHost:
+    address: str
     port: int
-    user: str
+    username: str
     password: str = None
     keyfile: str = None
+
+@dataclass
+class SSHConfig:
+    port: int
+    username: str
+    password: str = None
+    keyfile: str = None
+    jump: bool = False
+    jumphost: JumpHost = None
+
+@dataclass(frozen=False)
+class Config:
+    ssh: SSHConfig
     inventory_file: str = None
 
 def get_commands():
@@ -33,10 +47,12 @@ def get_commands_from_file(filename):
 def load_config(path) -> Config:
     yaml_data = load_cfg_from_file(path)
     config = Config(
-        port=yaml_data['ssh']['port'],
-        user=yaml_data['ssh']['user'],
-        keyfile=yaml_data['ssh']['keyfile'],
-        inventory_file=yaml_data['inventory']['hosts-file']
+        inventory_file=yaml_data['inventory']['hosts-file'],
+        ssh=SSHConfig(
+            port=yaml_data['ssh']['port'],
+            username=yaml_data['ssh']['user'],
+            keyfile=yaml_data['ssh']['keyfile']
+        )
     )
     return config
 
