@@ -12,25 +12,42 @@ class MikrotikSSHClient():
         self._connected = False
     
     def connect(self) -> None:
-        if self._password and not self._keyfile:
-            look_for_keys = False
-        else:
-            look_for_keys = True
+        disabled_algorithms = {'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']}
+        timeout = 5
         
-        try:
-            self._ssh.connect(
-                self._host,
-                port=self._port,
-                username=self._username,
-                password=self._password,
-                key_filename=self._keyfile,
-                disabled_algorithms={'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']},
-                timeout=5,
-                look_for_keys=look_for_keys
-            )
-            self._connected = True
-        except Exception as e:
-            raise e
+        # Check if password or keyfile is provided
+        if self._password is not None and self._keyfile == None:
+            # Connect with password
+            try:
+                self._ssh.connect(
+                    self._host,
+                    port=self._port,
+                    username=self._username,
+                    password=self._password,
+                    disabled_algorithms=disabled_algorithms,
+                    timeout=timeout,
+                    look_for_keys=False
+                )
+                self._connected = True
+            except Exception as e:
+                raise e
+        elif self._keyfile is not None and self._password == None:
+            # Connect with key
+            try:
+                self._ssh.connect(
+                    self._host,
+                    port=self._port,
+                    username=self._username,
+                    key_filename=self._keyfile,
+                    disabled_algorithms=disabled_algorithms,
+                    timeout=timeout,
+                    look_for_keys=True
+                )
+                self._connected = True
+            except Exception as e:
+                raise e
+        else:
+            raise Exception('Must provide either password or keyfile')
     
     def disconnect(self) -> None:
         if self._connected:
