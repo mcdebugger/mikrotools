@@ -38,6 +38,7 @@ def common_options(func):
     @click.option('-p', '--password', is_flag=True, help='Prompt for password')
     @click.option('-c', '--config-file', default='settings.yaml')
     @click.option('-i', '--inventory-file')
+    @click.option('-j', '--jump', is_flag=True, help='Use jump host')
     @wraps(func)
     def wrapper(*args, **kwargs):
         return func(*args, **kwargs)
@@ -87,25 +88,17 @@ def validate_commands(ctx, param, values):
 @click.option('-C', '--commands-file', cls=Mutex, not_required_if=['execute_command'])
 @common_options
 @click.pass_context
-def cli(ctx, host, port, user, password, execute_command, inventory_file, config_file, commands_file):
+def cli(ctx, *args, **kwargs):
     # Invoking default command
     if ctx.invoked_subcommand is None:
         validate_commands(ctx, None, None)
-        ctx.invoke(execute,
-                   host=host,
-                   port=port,
-                   user=user,
-                   password=password,
-                   execute_command=execute_command,
-                   inventory_file=inventory_file,
-                   config_file=config_file,
-                   commands_file=commands_file)
+        ctx.invoke(execute, *args, **kwargs)
 
 @cli.command(help='Backup configs from hosts')
 @click.option('-s', '--sensitive', is_flag=True, default=False)
 @mikromanager_init
 @common_options
-def backup(sensitive, host, port, user, password, inventory_file, config_file):
+def backup(sensitive, *args, **kwargs):
     hosts = get_hosts()
     backup_configs(hosts, sensitive=sensitive)
 
@@ -114,7 +107,7 @@ def backup(sensitive, host, port, user, password, inventory_file, config_file):
 @click.option('-C', '--commands-file', cls=Mutex, not_required_if=['execute_command'])
 @mikromanager_init
 @common_options
-def execute(host, port, user, password, execute_command, inventory_file, config_file, commands_file):
+def execute(*args, **kwargs):
     hosts = get_hosts()
     
     # Getting command from arguments or config file
@@ -129,7 +122,7 @@ def execute(host, port, user, password, execute_command, inventory_file, config_
 @click.option('-o', '--output-file', required=False)
 @mikromanager_init
 @common_options
-def outdated(min_version, filtered_version, host, port, user, password, inventory_file, config_file, output_file):
+def outdated(min_version, filtered_version, output_file, *args, **kwargs):
     hosts = get_hosts()
     outdated_hosts = get_outdated_hosts(hosts, min_version, filtered_version)
     if output_file:
@@ -142,28 +135,28 @@ def outdated(min_version, filtered_version, host, port, user, password, inventor
 @cli.command(name='list', help='List routers')
 @mikromanager_init
 @common_options
-def list_routers(host, port, user, password, inventory_file, config_file):
+def list_routers(*args, **kwargs):
     hosts = get_hosts()
     list_hosts(hosts)
 
 @cli.command(help='Reboot routers')
 @mikromanager_init
 @common_options
-def reboot(host, port, user, password, inventory_file, config_file):
+def reboot(*args, **kwargs):
     addresses = get_hosts()
     reboot_addresses(addresses)
 
 @cli.command(help='Upgrade routers with outdated RouterOS')
 @mikromanager_init
 @common_options
-def upgrade(host, port, user, password, inventory_file, config_file):
+def upgrade(*args, **kwargs):
     hosts = get_hosts()
     upgrade_hosts_routeros_start(hosts)
 
 @cli.command(help='Upgrade routers with outdated firmware')
 @mikromanager_init
 @common_options
-def upgrade_firmware(host, port, user, password, inventory_file, config_file):
+def upgrade_firmware(*args, **kwargs):
     hosts = get_hosts()
     upgrade_hosts_firmware_start(hosts)
 
