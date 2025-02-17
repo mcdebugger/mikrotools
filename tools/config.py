@@ -30,18 +30,6 @@ def get_commands_from_file(filename):
         commands = [command.rstrip() for command in commands_file]
         return commands
 
-def get_config():
-    ctx = click.get_current_context()
-    if ctx.params['config_file']:
-        path = ctx.params['config_file']
-    else:
-        path = 'settings.yaml'
-    
-    # Getting config from YAML file
-    yaml_data = load_cfg_from_file(path)
-    
-    return yaml_data
-
 def load_config(path) -> Config:
     yaml_data = load_cfg_from_file(path)
     config = Config(
