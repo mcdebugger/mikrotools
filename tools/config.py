@@ -25,7 +25,7 @@ class SSHConfig(Base):
     jumphost: JumpHost = None
 
 class Config(Base):
-    ssh: SSHConfig
+    ssh: SSHConfig = None
     inventory: Inventory = None
 
 def get_commands():
