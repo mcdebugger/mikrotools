@@ -22,7 +22,10 @@ class ConfigManager:
             logger.debug(f'Config loaded from YAML: {path}')
         except FileNotFoundError:
             config = Config()
-            logger.warning(f'Config file not found: {path}, using empty config')
+            logger.warning(f'Config file not found: {path}, using default config')
+        except TypeError:
+            config = Config()
+            logger.warning(f'Config file is empty or invalid: {path}, using default config')
         
         logger.debug(f'Config loaded: {config}')
         return config
