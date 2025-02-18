@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
 import click
+import logging
 
 from functools import wraps
 
-from tools.config import get_commands, get_hosts, load_config
+from config import get_config, load_config
+from tools.config import get_commands, get_hosts
 from tools.outputs import list_outdated_hosts
 from tools.ssh import execute_hosts_commands
 from tools.ssh import get_outdated_hosts
@@ -38,6 +40,8 @@ def common_options(func):
     @click.option('-p', '--password', is_flag=True, help='Prompt for password')
     @click.option('-c', '--config-file', default='settings.yaml')
     @click.option('-i', '--inventory-file')
+    @click.option('-j', '--jump', is_flag=True, help='Use jump host')
+    @click.option('-d', '--debug', is_flag=True, help='Enable debug mode')
     @wraps(func)
     def wrapper(*args, **kwargs):
         return func(*args, **kwargs)
@@ -45,23 +49,24 @@ def common_options(func):
 
 def mikromanager_init(f):
     @wraps(f)
-    def wrapper(*args, **kwargs):
-        port, user, password, config_file, inventory_file = map(
-            kwargs.get, ['port', 'user', 'password', 'config_file', 'inventory_file']
-        )
-        
+    def wrapper(port, user, password, config_file, inventory_file, jump, *args, **kwargs):
+        logger = logging.getLogger(__name__)
         config = load_config(config_file)
     
         if port is not None:
-            config.port = int(port)
+            config.ssh.port = int(port)
         if user is not None:
-            config.user = user
+            config.ssh.username = user
         if password:
-            config.keyfile = None
+            config.ssh.keyfile = None
             # Password prompt
-            config.password = click.prompt('Password', hide_input=True)
+            config.ssh.password = click.prompt('Password', hide_input=True)
         if inventory_file is not None:
-            config.inventory_file = inventory_file
+            config.inventory.hostsFile = inventory_file
+        if jump:
+            config.ssh.jump = True
+        
+        logger.debug(f'Config after applying command line options: {config}')
         
         # Configuring MikrotikManager
         MikrotikManager.configure(config)
@@ -69,6 +74,18 @@ def mikromanager_init(f):
         return f(*args, **kwargs)
     
     return wrapper
+
+def setup_logging(debug):
+    if debug:
+        level = logging.DEBUG
+    else:
+        level = logging.WARNING
+    
+    logging.basicConfig(
+        level=level,
+        format='%(asctime)s [%(levelname)s] %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S'
+    )
 
 def validate_commands(ctx, param, values):
     execute_command = ctx.params.get('execute_command')
@@ -87,34 +104,29 @@ def validate_commands(ctx, param, values):
 @click.option('-C', '--commands-file', cls=Mutex, not_required_if=['execute_command'])
 @common_options
 @click.pass_context
-def cli(ctx, host, port, user, password, execute_command, inventory_file, config_file, commands_file):
+def cli(ctx, *args, **kwargs):
+    # Setting up logging
+    setup_logging(ctx.params['debug'])
+    
     # Invoking default command
     if ctx.invoked_subcommand is None:
         validate_commands(ctx, None, None)
-        ctx.invoke(execute,
-                   host=host,
-                   port=port,
-                   user=user,
-                   password=password,
-                   execute_command=execute_command,
-                   inventory_file=inventory_file,
-                   config_file=config_file,
-                   commands_file=commands_file)
+        ctx.invoke(execute, *args, **kwargs)
 
 @cli.command(help='Backup configs from hosts')
 @click.option('-s', '--sensitive', is_flag=True, default=False)
 @mikromanager_init
 @common_options
-def backup(sensitive, host, port, user, password, inventory_file, config_file):
+def backup(sensitive, *args, **kwargs):
     hosts = get_hosts()
-    backup_configs(hosts, sensitive=sensitive)
+    backup_configs(hosts, sensitive)
 
 @cli.command(name='exec', help='Execute commands on hosts')
 @click.option('-e', '--execute-command', cls=Mutex, not_required_if=['commands_file'])
 @click.option('-C', '--commands-file', cls=Mutex, not_required_if=['execute_command'])
 @mikromanager_init
 @common_options
-def execute(host, port, user, password, execute_command, inventory_file, config_file, commands_file):
+def execute(*args, **kwargs):
     hosts = get_hosts()
     
     # Getting command from arguments or config file
@@ -129,7 +141,7 @@ def execute(host, port, user, password, execute_command, inventory_file, config_
 @click.option('-o', '--output-file', required=False)
 @mikromanager_init
 @common_options
-def outdated(min_version, filtered_version, host, port, user, password, inventory_file, config_file, output_file):
+def outdated(min_version, filtered_version, output_file, *args, **kwargs):
     hosts = get_hosts()
     outdated_hosts = get_outdated_hosts(hosts, min_version, filtered_version)
     if output_file:
@@ -142,28 +154,28 @@ def outdated(min_version, filtered_version, host, port, user, password, inventor
 @cli.command(name='list', help='List routers')
 @mikromanager_init
 @common_options
-def list_routers(host, port, user, password, inventory_file, config_file):
+def list_routers(*args, **kwargs):
     hosts = get_hosts()
     list_hosts(hosts)
 
 @cli.command(help='Reboot routers')
 @mikromanager_init
 @common_options
-def reboot(host, port, user, password, inventory_file, config_file):
+def reboot(*args, **kwargs):
     addresses = get_hosts()
     reboot_addresses(addresses)
 
 @cli.command(help='Upgrade routers with outdated RouterOS')
 @mikromanager_init
 @common_options
-def upgrade(host, port, user, password, inventory_file, config_file):
+def upgrade(*args, **kwargs):
     hosts = get_hosts()
     upgrade_hosts_routeros_start(hosts)
 
 @cli.command(help='Upgrade routers with outdated firmware')
 @mikromanager_init
 @common_options
-def upgrade_firmware(host, port, user, password, inventory_file, config_file):
+def upgrade_firmware(*args, **kwargs):
     hosts = get_hosts()
     upgrade_hosts_firmware_start(hosts)
 

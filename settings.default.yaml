@@ -1,4 +1,11 @@
-Port: 22
-User: admin
-KeyFile: mykey_id_ecdsa
-HostsFile: hosts.txt
+ssh:
+  port: 22
+  user: admin
+  keyfile: mykey_id_ecdsa
+  jumphost:
+    address: 192.168.0.1
+    port: 22
+    user: admin
+    keyfile: mykey_id_ecdsa
+inventory:
+  hostsFile: hosts.txt

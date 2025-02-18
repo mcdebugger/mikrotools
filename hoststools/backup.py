@@ -6,26 +6,27 @@ from tools.colors import fcolors_256 as fcolors
 
 from .models import MikrotikHost
 
-def get_device_config(host, device, sensitive=False):
+def get_device_config(host, sensitive=False):
     # Exporting current config
-    if sensitive:
-        # Exporting sensitive config
-        if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
-            # RouterOS 7.0+
-            current_config = device.execute_command_raw('/export show-sensitive')
+    with MikrotikManager.get_connection(host=host.address) as device:
+        if sensitive:
+            # Exporting sensitive config
+            if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
+                # RouterOS 7.0+
+                current_config = device.execute_command_raw('/export show-sensitive')
+            else:
+                # RouterOS < 7.0
+                current_config = device.execute_command_raw('/export')
         else:
-            # RouterOS < 7.0
-            current_config = device.execute_command_raw('/export')
-    else:
-        # Exporting non-sensitive config
-        if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
-            # RouterOS 7.0+
-            current_config = device.execute_command_raw('/export')
-        else:
-            # RouterOS < 7.0
-            current_config = device.execute_command_raw('/export hide-sensitive')
+            # Exporting non-sensitive config
+            if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
+                # RouterOS 7.0+
+                current_config = device.execute_command_raw('/export')
+            else:
+                # RouterOS < 7.0
+                current_config = device.execute_command_raw('/export hide-sensitive')
         
-        return current_config
+    return current_config
 
 def backup_configs(addresses, sensitive=False):
     counter = 1
@@ -40,7 +41,7 @@ def backup_configs(addresses, sensitive=False):
                 
                 print_backup_progress(host, counter, len(addresses), len(addresses) - counter + 1)
                 
-                current_config = get_device_config(host, device, sensitive)
+                current_config = get_device_config(host, sensitive)
         except Exception as e:
             failed_hosts.append(host)
             continue

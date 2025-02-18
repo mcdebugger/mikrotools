@@ -1,17 +1,9 @@
 import click
-import yaml
+import logging
 
-from dataclasses import dataclass
+from config import get_config
 
-from tools.args import parse_args
-
-@dataclass(frozen=False)
-class Config:
-    port: int
-    user: str
-    password: str = None
-    keyfile: str = None
-    inventory_file: str = None
+logger = logging.getLogger(__name__)
 
 def get_commands():
     ctx = click.get_current_context()
@@ -30,39 +22,35 @@ def get_commands_from_file(filename):
         commands = [command.rstrip() for command in commands_file]
         return commands
 
-def get_config():
-    ctx = click.get_current_context()
-    if ctx.params['config_file']:
-        path = ctx.params['config_file']
-    else:
-        path = 'settings.yaml'
-    
-    # Getting config from YAML file
-    yaml_data = load_cfg_from_file(path)
-    
-    return yaml_data
-
-def load_config(path) -> Config:
-    yaml_data = load_cfg_from_file(path)
-    config = Config(
-        port=yaml_data['Port'],
-        user=yaml_data['User'],
-        keyfile=yaml_data['KeyFile'],
-        inventory_file=yaml_data['HostsFile']
-    )
-    return config
-
 def get_hosts():
     ctx = click.get_current_context()
     if ctx.params['host']:
         hosts = [ctx.params['host']]
     elif ctx.params['inventory_file']:
-        hosts = read_hosts_from_file(ctx.params['inventory_file'])
+        logger.debug(f'get_hosts: Inventory file path set from command line: '
+                     f'{ctx.params["inventory_file"]}')
+        try:
+            hosts = read_hosts_from_file(ctx.params['inventory_file'])
+        except TypeError:
+            logger.error('Inventory file or host address is not specified')
+            exit(1)
+        except FileNotFoundError:
+            logger.error(f'Inventory file not found: {ctx.params["inventory_file"]}')
+            exit(1)
     else:
         # Getting config from YAML file
-        cfg = get_config()
-        hostsfile = cfg['HostsFile']
-        hosts = read_hosts_from_file(hostsfile)
+        config = get_config()
+        logger.debug(f'get_hosts: Config: {config}')
+        logger.debug(f'get_hosts: Inventory file path set from config: '
+                     f'{config.inventory.hostsFile}')
+        try:
+            hosts = read_hosts_from_file(config.inventory.hostsFile)
+        except TypeError:
+            logger.error('Inventory file or host address is not specified')
+            exit(1)
+        except FileNotFoundError:
+            logger.error(f'Inventory file not found: {config.inventory.hostsFile}')
+            exit(1)
     
     return hosts
 
@@ -70,8 +58,3 @@ def read_hosts_from_file(filename):
     with open(filename) as hostsfile:
         hosts = [host.rstrip() for host in hostsfile]
         return hosts
-
-def load_cfg_from_file(filename):
-    with open(filename) as cfgfile:
-        cfg = yaml.safe_load(cfgfile)
-        return cfg

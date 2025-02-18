@@ -1,4 +1,3 @@
-import click
 import threading
 
 from contextlib import contextmanager
@@ -6,7 +5,7 @@ from functools import lru_cache
 from paramiko.ssh_exception import SSHException
 from typing import Generator
 
-from tools.config import Config
+from config import Config
 
 from .client import MikrotikSSHClient
 
@@ -35,11 +34,11 @@ class MikrotikManager:
             if not cls._config:
                 raise RuntimeError('MikrotikManager is not configured')
             
-            username = cls._config.user
-            port = cls._config.port
-            password = cls._config.password
-            if cls._config.keyfile:
-                keyfile = cls._config.keyfile
+            username = cls._config.ssh.username
+            port = cls._config.ssh.port
+            password = cls._config.ssh.password
+            if cls._config.ssh.keyfile:
+                keyfile = cls._config.ssh.keyfile
             else:
                 keyfile = None
             
