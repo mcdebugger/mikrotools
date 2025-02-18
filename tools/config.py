@@ -29,7 +29,14 @@ def get_hosts():
     elif ctx.params['inventory_file']:
         logger.debug(f'get_hosts: Inventory file path set from command line: '
                      f'{ctx.params["inventory_file"]}')
-        hosts = read_hosts_from_file(ctx.params['inventory_file'])
+        try:
+            hosts = read_hosts_from_file(ctx.params['inventory_file'])
+        except TypeError:
+            logger.error('Inventory file or host address is not specified')
+            exit(1)
+        except FileNotFoundError:
+            logger.error(f'Inventory file not found: {ctx.params["inventory_file"]}')
+            exit(1)
     else:
         # Getting config from YAML file
         config = get_config()
