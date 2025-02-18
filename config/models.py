@@ -1,3 +1,5 @@
+import yaml
+
 from pydantic import BaseModel
 
 class Base (BaseModel):
@@ -24,3 +26,9 @@ class SSHConfig(Base):
 class Config(Base):
     ssh: SSHConfig = SSHConfig()
     inventory: Inventory = Inventory()
+
+    @classmethod
+    def from_yaml(cls, path: str) -> 'Config':
+        with open(path, 'r') as f:
+            data = yaml.safe_load(f)
+            return cls(**data)
