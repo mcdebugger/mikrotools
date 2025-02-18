@@ -62,7 +62,7 @@ def mikromanager_init(f):
             # Password prompt
             config.ssh.password = click.prompt('Password', hide_input=True)
         if inventory_file is not None:
-            config.inventory_file = inventory_file
+            config.inventory.hostsFile = inventory_file
         if jump:
             config.ssh.jump = True
         
