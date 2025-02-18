@@ -51,8 +51,7 @@ def mikromanager_init(f):
     @wraps(f)
     def wrapper(port, user, password, config_file, inventory_file, jump, *args, **kwargs):
         logger = logging.getLogger(__name__)
-        load_config(config_file)
-        config = get_config()
+        config = load_config(config_file)
     
         if port is not None:
             config.ssh.port = int(port)
