@@ -20,4 +20,7 @@ dependencies = [
 dynamic = ["version"]
 
 [project.scripts]
-mikromanager = "mikromanager.mikromanager:cli"
+mikromanager = "mikromanager:cli"
+
+[tool.setuptools.dynamic]
+version = {attr = "mikromanager.__version__"}
