@@ -1,7 +1,7 @@
 from packaging import version
 
-from netapi import MikrotikManager
-from tools.colors import fcolors_256 as fcolors
+from mikromanager.netapi import MikrotikManager
+from mikromanager.tools.colors import fcolors_256 as fcolors
 
 def execute_hosts_commands(hosts, commands):
     for host in hosts:

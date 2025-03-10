@@ -1,8 +1,8 @@
 from packaging import version
 from rich.console import Console
 
-from netapi import MikrotikManager
-from tools.colors import fcolors_256 as fcolors
+from mikromanager.netapi import MikrotikManager
+from mikromanager.tools.colors import fcolors_256 as fcolors
 
 from .models import MikrotikHost
 
