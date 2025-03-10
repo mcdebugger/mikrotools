@@ -10,12 +10,12 @@ authors = [
 description = "Mikrotik manager"
 requires-python = ">=3.11"
 dependencies = [
-    "click",
-    "packaging",
-    "paramiko",
-    "pydantic",
-    "PyYAML",
-    "rich",
+    "click>=8.1.8",
+    "packaging>=24.2",
+    "paramiko>=3.3.1",
+    "pydantic>=2.10.6",
+    "PyYAML>=6.0.1",
+    "rich>=13.9.4",
 ]
 dynamic = ["version"]
 
