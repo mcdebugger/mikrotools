@@ -8,8 +8,8 @@ from rich.table import Table
 
 from .models import MikrotikHost
 
-from netapi import MikrotikManager
-from tools.colors import fcolors_256 as fcolors
+from mikromanager.netapi import MikrotikManager
+from mikromanager.tools.colors import fcolors_256 as fcolors
 
 def list_hosts(addresses):
     offline_hosts = 0
