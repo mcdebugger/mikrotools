@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mikromanager"
+authors = [
+    {name = "Maksim Kachur", email = "me@maksimkachur.ru"},
+]
+description = "Mikrotik manager"
+requires-python = ">=3.11"
+dependencies = [
+    "click",
+    "packaging",
+    "paramiko",
+    "pydantic",
+    "PyYAML",
+    "rich",
+]
+dynamic = ["version"]
+
+[project.scripts]
+mikromanager = "mikromanager.mikromanager:cli"
