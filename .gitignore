@@ -28,6 +28,9 @@ ENV/
 env.bak/
 venv.bak/
 
+# Build / packaging
+*.egg-info
+
 # Logs
 *.log
 *.json
