@@ -5,7 +5,7 @@ from functools import lru_cache
 from paramiko.ssh_exception import SSHException
 from typing import Generator
 
-from mikromanager.config import Config
+from mikrotools.config import Config
 
 from .client import MikrotikSSHClient
 
