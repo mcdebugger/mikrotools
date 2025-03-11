@@ -29,6 +29,7 @@ env.bak/
 venv.bak/
 
 # Build / packaging
+dist/
 *.egg-info
 
 # Logs
