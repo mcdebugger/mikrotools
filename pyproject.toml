@@ -18,6 +18,12 @@ dependencies = [
     "rich>=13.9.4",
 ]
 dynamic = ["version"]
+readme = "README.md"
+license =  {text = "MIT"}
+
+[project.urls]
+Homepage = "https://github.com/mcdebugger/mikrotools"
+Issues = "https://github.com/mcdebugger/mikrotools/issues"
 
 [project.scripts]
 mikromanager = "mikrotools.mikromanager:cli"
