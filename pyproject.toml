@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["pdm-backend"]
+build-backend = "pdm.backend"
 
 [project]
 name = "mikrotools"
@@ -28,5 +28,6 @@ Issues = "https://github.com/mcdebugger/mikrotools/issues"
 [project.scripts]
 mikromanager = "mikrotools.mikromanager:cli"
 
-[tool.setuptools.dynamic]
-version = {attr = "mikrotools.__version__"}
+[tool.pdm.version]
+source = "file"
+path = "src/mikrotools/__init__.py"
