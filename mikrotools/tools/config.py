@@ -1,7 +1,7 @@
 import click
 import logging
 
-from mikromanager.config import get_config
+from mikrotools.config import get_config
 
 logger = logging.getLogger(__name__)
 

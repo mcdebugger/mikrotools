@@ -3,11 +3,11 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "mikromanager"
+name = "mikrotools"
 authors = [
     {name = "Maksim Kachur", email = "me@maksimkachur.ru"},
 ]
-description = "Mikrotik manager"
+description = "Mikrotik tools"
 requires-python = ">=3.11"
 dependencies = [
     "click>=8.1.8",
@@ -20,7 +20,7 @@ dependencies = [
 dynamic = ["version"]
 
 [project.scripts]
-mikromanager = "mikromanager:cli"
+mikromanager = "mikrotools.mikromanager:cli"
 
 [tool.setuptools.dynamic]
-version = {attr = "mikromanager.__version__"}
+version = {attr = "mikrotools.__version__"}
