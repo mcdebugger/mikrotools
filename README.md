@@ -1,6 +1,6 @@
 # mikrotools
 
-A set of tools to automate operation with Mikrotik devices
+A set of tools to automate operation on Mikrotik devices
 
 ## Tools
 
@@ -8,7 +8,17 @@ A set of tools to automate operation with Mikrotik devices
 
 ## Installation
 
-`pip install mikrotools` (using pip) or `pipx install mikrotools` (using pipx)
+Using pip:
+
+```
+pip install mikrotools
+```
+
+Using pipx:
+
+```
+pipx install mikrotools
+```
 
 ## Usage
 
@@ -17,12 +27,18 @@ mikromanager by default searches for settings.yaml in current working directory.
 
 For example to list hosts from hosts.txt file using config from my_settings.yaml use the following command:
 
-`mikromanager list -c my_settings.yaml -i hosts.txt`
+```
+mikromanager list -c my_settings.yaml -i hosts.txt
+```
 
 For further help use mikromanager with -h or --help flag.
 
-`mikromanager -h`
+```
+mikromanager -h
+```
 
 or
 
-`mikromanager [command] -h`
+```
+mikromanager [command] -h
+```
