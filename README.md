@@ -23,7 +23,7 @@ pipx install mikrotools
 ## Usage
 
 ### mikromanager
-mikromanager by default searches for settings.yaml in current working directory. You can specify path to config using -c option.
+mikromanager by default searches for settings.yaml in current working directory. You can specify path to config using -c option. Example settings file can be found at [settings.default.yaml](settings.default.yaml).
 
 For example to list hosts from hosts.txt file using config from my_settings.yaml use the following command:
 
