@@ -38,7 +38,7 @@ def common_options(func):
     @click.option('-P', '--port', type=int, help='SSH port')
     @click.option('-u', '--user', help='Username')
     @click.option('-p', '--password', is_flag=True, help='Prompt for password')
-    @click.option('-c', '--config-file', default='settings.yaml')
+    @click.option('-c', '--config-file')
     @click.option('-i', '--inventory-file')
     @click.option('-j', '--jump', is_flag=True, help='Use jump host')
     @click.option('-d', '--debug', is_flag=True, help='Enable debug mode')
@@ -51,7 +51,11 @@ def mikromanager_init(f):
     @wraps(f)
     def wrapper(port, user, password, config_file, inventory_file, jump, *args, **kwargs):
         logger = logging.getLogger(__name__)
-        config = load_config(config_file)
+        try:
+            config = load_config(config_file)
+        except Exception as e:
+            logger.error(f'Failed to load config file: {e}')
+            exit(1)
     
         if port is not None:
             config.ssh.port = int(port)
