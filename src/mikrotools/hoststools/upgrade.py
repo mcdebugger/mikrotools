@@ -307,5 +307,6 @@ def upgrade_host_routeros(host: MikrotikHost) -> None:
     try:
         with MikrotikManager.get_connection(host.address) as device:
             device.execute_command_raw('/system package update check-for-updates')
+            device.execute_command_raw('/system package update install')
     except Exception as e:
         pass
