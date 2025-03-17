@@ -4,8 +4,9 @@ from mikrotools.cli.utils import common_options
 from mikrotools.hoststools.upgrade import upgrade_hosts_firmware_start, upgrade_hosts_routeros_start
 from mikrotools.mikromanager import mikromanager_init
 from mikrotools.tools.config import get_hosts
-from mikrotools.tools.outputs import list_outdated_hosts
 from mikrotools.tools.ssh import get_outdated_hosts
+
+from .utils import list_outdated_hosts
 
 @click.command(help='Upgrade routers with outdated RouterOS')
 @mikromanager_init
