@@ -30,6 +30,7 @@ mikromanager = "mikrotools.mikromanager:cli"
 
 [project.entry-points."mikrotools.plugins"]
 backup = "mikrotools.plugins.backup"
+list_routers = "mikrotools.plugins.list_routers"
 
 [tool.pdm.version]
 source = "file"

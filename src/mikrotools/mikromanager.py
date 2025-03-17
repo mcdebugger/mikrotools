@@ -116,13 +116,6 @@ def outdated(min_version, filtered_version, output_file, *args, **kwargs):
     else:
         list_outdated_hosts(outdated_hosts)
 
-@cli.command(name='list', help='List routers')
-@mikromanager_init
-@common_options
-def list_routers(*args, **kwargs):
-    hosts = get_hosts()
-    list_hosts(hosts)
-
 @cli.command(help='Reboot routers')
 @mikromanager_init
 @common_options
