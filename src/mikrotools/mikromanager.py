@@ -116,20 +116,6 @@ def outdated(min_version, filtered_version, output_file, *args, **kwargs):
     else:
         list_outdated_hosts(outdated_hosts)
 
-@cli.command(help='Upgrade routers with outdated RouterOS')
-@mikromanager_init
-@common_options
-def upgrade(*args, **kwargs):
-    hosts = get_hosts()
-    upgrade_hosts_routeros_start(hosts)
-
-@cli.command(help='Upgrade routers with outdated firmware')
-@mikromanager_init
-@common_options
-def upgrade_firmware(*args, **kwargs):
-    hosts = get_hosts()
-    upgrade_hosts_firmware_start(hosts)
-
 load_plugins(cli)
 
 if __name__ == '__main__':

@@ -32,6 +32,7 @@ mikromanager = "mikrotools.mikromanager:cli"
 backup = "mikrotools.plugins.backup"
 list_routers = "mikrotools.plugins.list_routers"
 reboot = "mikrotools.plugins.reboot"
+upgrade = "mikrotools.plugins.upgrade"
 
 [tool.pdm.version]
 source = "file"
