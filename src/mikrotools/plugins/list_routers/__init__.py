@@ -1,3 +1,3 @@
-from .list_routers import register
+from .cli import register
 
 __all__ = ['register']
