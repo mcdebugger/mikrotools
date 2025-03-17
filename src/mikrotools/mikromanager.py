@@ -6,14 +6,7 @@ import logging
 from functools import wraps
 
 from mikrotools.cli.utils import cli, load_plugins
-from .config import get_config, load_config
-from .tools.config import get_commands, get_hosts
-from .tools.outputs import list_outdated_hosts
-from .tools.ssh import execute_hosts_commands
-from .tools.ssh import get_outdated_hosts
-from .hoststools import backup_configs
-from .hoststools.common import list_hosts, reboot_addresses
-from .hoststools.upgrade import upgrade_hosts_firmware_start, upgrade_hosts_routeros_start
+from .config import load_config
 from .netapi import MikrotikManager
 
 def mikromanager_init(f):
