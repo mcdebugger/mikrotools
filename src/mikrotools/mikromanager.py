@@ -5,7 +5,7 @@ import logging
 
 from functools import wraps
 
-from mikrotools.cli.utils import common_options, load_plugins, Mutex
+from mikrotools.cli.utils import cli, load_plugins
 from .config import get_config, load_config
 from .tools.config import get_commands, get_hosts
 from .tools.outputs import list_outdated_hosts
@@ -48,59 +48,9 @@ def mikromanager_init(f):
     
     return wrapper
 
-def setup_logging(debug):
-    if debug:
-        level = logging.DEBUG
-    else:
-        level = logging.WARNING
-    
-    logging.basicConfig(
-        level=level,
-        format='%(asctime)s [%(levelname)s] %(message)s',
-        datefmt='%Y-%m-%d %H:%M:%S'
-    )
-
-def validate_commands(ctx, param, values):
-    execute_command = ctx.params.get('execute_command')
-    commands_file = ctx.params.get('commands_file')
-    
-    if (not execute_command and not commands_file):
-        raise click.UsageError('You must provide either -e or -C')
-    
-    if (execute_command and commands_file):
-        raise click.UsageError('You must provide either -e or -C, but not both.')
-    
-    return values
-
-@click.group(invoke_without_command=True, context_settings=dict(help_option_names=['-h', '--help']))
-@click.option('-e', '--execute-command', cls=Mutex, not_required_if=['commands_file'])
-@click.option('-C', '--commands-file', cls=Mutex, not_required_if=['execute_command'])
-@common_options
-@click.pass_context
-def cli(ctx, *args, **kwargs):
-    # Setting up logging
-    setup_logging(ctx.params['debug'])
-    
-    # Invoking default command
-    if ctx.invoked_subcommand is None:
-        validate_commands(ctx, None, None)
-        ctx.invoke(execute, *args, **kwargs)
-
-@cli.command(name='exec', help='Execute commands on hosts')
-@click.option('-e', '--execute-command', cls=Mutex, not_required_if=['commands_file'])
-@click.option('-C', '--commands-file', cls=Mutex, not_required_if=['execute_command'])
-@mikromanager_init
-@common_options
-def execute(*args, **kwargs):
-    hosts = get_hosts()
-    
-    # Getting command from arguments or config file
-    commands = get_commands()
-    
-    # Executing commands for each host in list
-    execute_hosts_commands(hosts, commands)
-
-load_plugins(cli)
+def main():
+    load_plugins(cli)
+    cli()
 
 if __name__ == '__main__':
-    cli()
+    main()

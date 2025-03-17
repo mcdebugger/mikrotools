@@ -3,6 +3,8 @@ from importlib.metadata import entry_points
 
 import click
 
+from mikrotools.tools.log import setup_logging
+
 class Mutex(click.Option):
     def __init__(self, *args, **kwargs):
         self.not_required_if:list = kwargs.pop("not_required_if")
@@ -35,6 +37,23 @@ def common_options(func):
         return func(*args, **kwargs)
     return wrapper
 
+@click.group(invoke_without_command=True, context_settings=dict(help_option_names=['-h', '--help']))
+@click.option('-e', '--execute-command', cls=Mutex, not_required_if=['commands_file'])
+@click.option('-C', '--commands-file', cls=Mutex, not_required_if=['execute_command'])
+@common_options
+@click.pass_context
+def cli(ctx, *args, **kwargs):
+    # Setting up logging
+    setup_logging(ctx.params['debug'])
+    
+    # Invoking default command
+    if ctx.invoked_subcommand is None:
+        validate_commands(ctx, None, None)
+        cmd = cli.get_command(ctx, 'exec')
+        if not cmd:
+            raise click.UsageError("Default 'exec' command not found.")
+        ctx.invoke(cmd, *args, **kwargs)
+
 def load_plugins(cli_group):
     for entry_point in entry_points(group='mikrotools.plugins'):
         try:
@@ -45,3 +64,15 @@ def load_plugins(cli_group):
                 f'Failed to load plugin {entry_point.name}: {e}',
                 fg='red', err=True
             )
+
+def validate_commands(ctx, param, values):
+    execute_command = ctx.params.get('execute_command')
+    commands_file = ctx.params.get('commands_file')
+    
+    if (not execute_command and not commands_file):
+        raise click.UsageError('You must provide either -e or -C')
+    
+    if (execute_command and commands_file):
+        raise click.UsageError('You must provide either -e or -C, but not both.')
+    
+    return values
