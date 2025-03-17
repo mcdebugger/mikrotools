@@ -100,22 +100,6 @@ def execute(*args, **kwargs):
     # Executing commands for each host in list
     execute_hosts_commands(hosts, commands)
 
-@cli.command(help='Check for routers with outdated firmware')
-@click.argument('min-version')
-@click.argument('filtered-version', required=False)
-@click.option('-o', '--output-file', required=False)
-@mikromanager_init
-@common_options
-def outdated(min_version, filtered_version, output_file, *args, **kwargs):
-    hosts = get_hosts()
-    outdated_hosts = get_outdated_hosts(hosts, min_version, filtered_version)
-    if output_file:
-        with open(output_file, 'w') as output_file:
-            for host in outdated_hosts:
-                output_file.write(f'{host}\n')
-    else:
-        list_outdated_hosts(outdated_hosts)
-
 load_plugins(cli)
 
 if __name__ == '__main__':
