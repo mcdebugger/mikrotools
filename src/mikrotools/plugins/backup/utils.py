@@ -1,10 +1,9 @@
 from packaging import version
 from rich.console import Console
 
+from mikrotools.hoststools.models import MikrotikHost
 from mikrotools.netapi import MikrotikManager
 from mikrotools.tools.colors import fcolors_256 as fcolors
-
-from .models import MikrotikHost
 
 def get_device_config(host, sensitive=False):
     # Exporting current config
