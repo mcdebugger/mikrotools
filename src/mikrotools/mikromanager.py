@@ -5,7 +5,7 @@ import logging
 
 from functools import wraps
 
-from mikrotools.cli.utils import common_options, Mutex
+from mikrotools.cli.utils import common_options, load_plugins, Mutex
 from .config import get_config, load_config
 from .tools.config import get_commands, get_hosts
 from .tools.outputs import list_outdated_hosts
@@ -86,14 +86,6 @@ def cli(ctx, *args, **kwargs):
         validate_commands(ctx, None, None)
         ctx.invoke(execute, *args, **kwargs)
 
-@cli.command(help='Backup configs from hosts')
-@click.option('-s', '--sensitive', is_flag=True, default=False)
-@mikromanager_init
-@common_options
-def backup(sensitive, *args, **kwargs):
-    hosts = get_hosts()
-    backup_configs(hosts, sensitive)
-
 @cli.command(name='exec', help='Execute commands on hosts')
 @click.option('-e', '--execute-command', cls=Mutex, not_required_if=['commands_file'])
 @click.option('-C', '--commands-file', cls=Mutex, not_required_if=['execute_command'])
@@ -151,6 +143,8 @@ def upgrade(*args, **kwargs):
 def upgrade_firmware(*args, **kwargs):
     hosts = get_hosts()
     upgrade_hosts_firmware_start(hosts)
+
+load_plugins(cli)
 
 if __name__ == '__main__':
     cli()

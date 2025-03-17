@@ -1,4 +1,5 @@
 from functools import wraps
+from importlib.metadata import entry_points
 
 import click
 
@@ -33,3 +34,14 @@ def common_options(func):
     def wrapper(*args, **kwargs):
         return func(*args, **kwargs)
     return wrapper
+
+def load_plugins(cli_group):
+    for entry_point in entry_points(group='mikrotools.plugins'):
+        try:
+            plugin = entry_point.load()
+            plugin.register(cli_group)
+        except Exception as e:
+            click.secho(
+                f'Failed to load plugin {entry_point.name}: {e}',
+                fg='red', err=True
+            )

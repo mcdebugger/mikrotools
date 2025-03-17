@@ -28,6 +28,9 @@ Issues = "https://github.com/mcdebugger/mikrotools/issues"
 [project.scripts]
 mikromanager = "mikrotools.mikromanager:cli"
 
+[project.entry-points."mikrotools.plugins"]
+backup = "mikrotools.plugins.backup"
+
 [tool.pdm.version]
 source = "file"
 path = "src/mikrotools/__init__.py"
