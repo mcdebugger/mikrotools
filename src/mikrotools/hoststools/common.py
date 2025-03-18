@@ -5,7 +5,6 @@ from rich.prompt import Confirm
 from .models import MikrotikHost
 
 from mikrotools.netapi import MikrotikManager
-from mikrotools.tools.colors import fcolors_256 as fcolors
 
 def print_reboot_progress(host, counter, total, remaining):
     # Clears the current line
