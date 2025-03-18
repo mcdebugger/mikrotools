@@ -1,5 +1,3 @@
-from packaging import version
-
 from mikrotools.netapi import MikrotikManager
 from mikrotools.tools.colors import fcolors_256 as fcolors
 
