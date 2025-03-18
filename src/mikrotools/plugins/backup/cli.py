@@ -1,9 +1,10 @@
 import click
 
-from mikrotools.hoststools import backup_configs
 from mikrotools.cli.utils import common_options
 from mikrotools.mikromanager import mikromanager_init
 from mikrotools.tools.config import get_hosts
+
+from .utils import backup_configs
 
 @click.command(help='Backup configs from hosts')
 @click.option('-s', '--sensitive', is_flag=True, default=False)

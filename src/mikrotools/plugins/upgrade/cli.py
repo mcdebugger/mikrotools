@@ -1,12 +1,10 @@
 import click
 
 from mikrotools.cli.utils import common_options
-from mikrotools.hoststools.upgrade import upgrade_hosts_firmware_start, upgrade_hosts_routeros_start
 from mikrotools.mikromanager import mikromanager_init
 from mikrotools.tools.config import get_hosts
-from mikrotools.tools.ssh import get_outdated_hosts
 
-from .utils import list_outdated_hosts
+from .utils import get_outdated_hosts, list_outdated_hosts, upgrade_hosts_firmware_start, upgrade_hosts_routeros_start
 
 @click.command(help='Upgrade routers with outdated RouterOS')
 @mikromanager_init
