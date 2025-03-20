@@ -1,4 +1,4 @@
-VALID_OPS = ['=', '!=', '>', '>=', '<', '<='] # Mikrotik filter operators
+VALID_OPS = ['=', '!=', '>', '>=', '<', '<=', '~', '!~'] # Mikrotik filter operators
 
 class Filter:
     def __init__(self, *args):
@@ -231,6 +231,32 @@ class Filter:
         """
         return self._add_condition(field, '<=', value)
     
+    def startswith(self, field: str, value: str) -> 'Filter':
+        """
+        Add a starts-with condition to the filter.
+
+        :param field: The field to apply the condition to.
+        :type field: str
+        :param value: The value to compare the field with.
+        :type value: str
+        :return: This filter instance.
+        :rtype: Filter
+        """
+        return self._add_condition(field, '~', value)
+    
+    def notstartswith(self, field: str, value: str) -> 'Filter':
+        """
+        Add a not-starts-with condition to the filter.
+
+        :param field: The field to apply the condition to.
+        :type field: str
+        :param value: The value to compare the field with.
+        :type value: str
+        :return: This filter instance.
+        :rtype: Filter
+        """
+        return self._add_condition(field, '!~', value)
+    
     def _add_condition(self, field: str, op: str, value: str) -> 'Filter':
         """
         Add a condition to the filter.
@@ -300,7 +326,7 @@ class Filter:
             elif len(cond) == 4 and isinstance(cond[1], str) and isinstance(cond[2], str) and isinstance(cond[3], str):
                 # Single condition
                 operator, field, op, value = cond
-                clause = f'{field}{op}{value}'
+                clause = f'{field}{op}"{value}"'
                 if operator:
                     clause = f'{operator} {clause}'
                 parts.append(clause)
