@@ -1,5 +1,7 @@
 import paramiko
 
+from .filters import Filter
+
 class MikrotikSSHClient():
     def __init__(self, host: str, username: str, password: str = None, keyfile: str = None, port: int = 22):
         self._host = host
@@ -90,6 +92,23 @@ class MikrotikSSHClient():
             return output
         except paramiko.SSHException as e:
             raise e
+    
+    def find(self, path: str, filters: list[Filter] | None = None) -> list[str]:
+        ids = []
+        
+        # Remove trailing slash
+        path = path.rstrip('/')
+        
+        if filters is not None:
+            path = f'{path} find where {filters.to_cli()}'
+        else:
+            path = f'{path} find'
+        
+        response = self.execute_command_raw(f':put [{path}]').strip()
+        for id in response.split(';'):
+            ids.append(id.strip())
+        
+        return ids
     
     def get(self, path: str, obj: str = None) -> str:
         """
