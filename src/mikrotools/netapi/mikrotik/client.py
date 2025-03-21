@@ -153,7 +153,7 @@ class MikrotikSSHClient():
             path = f'{path} get'
         return self.execute_command_raw(f':put [{path}]').strip()
     
-    def get_dict(self, path: str, obj: str = None) -> list[str]:
+    def get_dict(self, path: str, obj: str = None) -> dict[str, str]:
         """
         Retrieves a dictionary representation of an object's properties from a path on the router.
 
