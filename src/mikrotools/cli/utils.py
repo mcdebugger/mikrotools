@@ -5,6 +5,23 @@ import click
 
 from mikrotools.tools.log import setup_logging
 
+class AliasedGroup(click.Group):
+    def get_command(self, ctx, cmd_name):
+        rv = click.Group.get_command(self, ctx, cmd_name)
+        if rv is not None:
+            return rv
+        matches = [x for x in self.list_commands(ctx)
+                   if x.startswith(cmd_name)]
+        if not matches:
+            return None
+        elif len(matches) == 1:
+            return click.Group.get_command(self, ctx, matches[0])
+        ctx.fail(f'Too many matches: {", ".join(sorted(matches))}')
+    
+    def resolve_command(self, ctx, args):
+        _, cmd, args, = super().resolve_command(ctx, args)
+        return cmd.name, cmd, args
+
 class Mutex(click.Option):
     def __init__(self, *args, **kwargs):
         self.not_required_if:list = kwargs.pop("not_required_if")
@@ -37,7 +54,7 @@ def common_options(func):
         return func(*args, **kwargs)
     return wrapper
 
-@click.group(invoke_without_command=True, context_settings=dict(help_option_names=['-h', '--help']))
+@click.group(cls=AliasedGroup, invoke_without_command=True, context_settings=dict(help_option_names=['-h', '--help']))
 @click.option('-e', '--execute-command', cls=Mutex, not_required_if=['commands_file'])
 @click.option('-C', '--commands-file', cls=Mutex, not_required_if=['execute_command'])
 @common_options
