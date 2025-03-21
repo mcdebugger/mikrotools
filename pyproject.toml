@@ -36,5 +36,4 @@ reboot = "mikrotools.plugins.reboot"
 upgrade = "mikrotools.plugins.upgrade"
 
 [tool.pdm.version]
-source = "file"
-path = "src/mikrotools/__init__.py"
+source = "scm"
