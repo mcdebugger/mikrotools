@@ -6,10 +6,37 @@ import click
 from mikrotools.tools.log import setup_logging
 
 class AliasedGroup(click.Group):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.aliases = {}
+        
+    def command(self, *args, **kwargs):
+        aliases = kwargs.pop('aliases', [])
+        decorator = super().command(*args, **kwargs)
+        def new_decorator(f):
+            cmd = decorator(f)
+            cmd.aliases = aliases
+            return cmd
+        return new_decorator
+    
+    def add_command(self, cmd, name = None):
+        if hasattr(cmd, 'aliases'):
+            for alias in cmd.aliases:
+                if alias in self.aliases:
+                    raise click.ClickException(f'Alias {alias} is already taken by {self.aliases[alias]}')
+                self.aliases[alias] = cmd.name
+        return super().add_command(cmd, name)
+    
     def get_command(self, ctx, cmd_name):
         rv = click.Group.get_command(self, ctx, cmd_name)
         if rv is not None:
             return rv
+        
+        # Try to resolve alias
+        if cmd_name in self.aliases:
+            return click.Group.get_command(self, ctx, self.aliases[cmd_name])
+        
+        # Try to resolve ambiguous command
         matches = [x for x in self.list_commands(ctx)
                    if x.startswith(cmd_name)]
         if not matches:
@@ -20,7 +47,7 @@ class AliasedGroup(click.Group):
     
     def resolve_command(self, ctx, args):
         _, cmd, args, = super().resolve_command(ctx, args)
-        return cmd.name, cmd, args
+        return cmd.name, cmd, args        
 
 class Mutex(click.Option):
     def __init__(self, *args, **kwargs):
