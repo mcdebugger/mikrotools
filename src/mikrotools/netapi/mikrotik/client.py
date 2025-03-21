@@ -1,6 +1,9 @@
+import logging
 import paramiko
 
 from .filters import Filter
+
+logger = logging.getLogger(__name__)
 
 class MikrotikSSHClient():
     def __init__(self, host: str, username: str, password: str = None, keyfile: str = None, port: int = 22):
@@ -91,6 +94,8 @@ class MikrotikSSHClient():
         """
         if not self._connected:
             raise ConnectionError('Not connected to host')
+        
+        logger.debug(f'Executing command: {command}')
         
         try:
             _, stdout, stderr = self._ssh.exec_command(command)
