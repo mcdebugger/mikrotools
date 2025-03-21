@@ -8,24 +8,24 @@ from mikrotools.tools.log import setup_logging
 class AliasedGroup(click.Group):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.aliases = {}
+        self.aliases: dict[str, str] = {}
         
     def command(self, *args, **kwargs):
         aliases = kwargs.pop('aliases', [])
         decorator = super().command(*args, **kwargs)
-        def new_decorator(f):
+        if not aliases:
+            return decorator
+        
+        def decorator_with_aliases_wrapper(f):
             cmd = decorator(f)
-            cmd.aliases = aliases
+            if aliases:
+                for alias in aliases:
+                    if alias in self.aliases:
+                        raise click.ClickException(f'Alias {alias} is already taken by {self.aliases[alias]}')
+                    self.aliases[alias] = cmd.name
             return cmd
-        return new_decorator
-    
-    def add_command(self, cmd, name = None):
-        if hasattr(cmd, 'aliases'):
-            for alias in cmd.aliases:
-                if alias in self.aliases:
-                    raise click.ClickException(f'Alias {alias} is already taken by {self.aliases[alias]}')
-                self.aliases[alias] = cmd.name
-        return super().add_command(cmd, name)
+        
+        return decorator_with_aliases_wrapper
     
     def get_command(self, ctx, cmd_name):
         rv = click.Group.get_command(self, ctx, cmd_name)
