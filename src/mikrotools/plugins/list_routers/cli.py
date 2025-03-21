@@ -1,12 +1,12 @@
 import click
 
-from mikrotools.cli.utils import common_options
+from mikrotools.cli.utils import cli, common_options
 from mikrotools.mikromanager import mikromanager_init
 from mikrotools.tools.config import get_hosts
 
 from .utils import list_hosts
 
-@click.command(name='list', help='List routers')
+@cli.command(name='list', help='List routers', aliases=['ls', 'l'])
 @mikromanager_init
 @common_options
 def list_routers(*args, **kwargs):
