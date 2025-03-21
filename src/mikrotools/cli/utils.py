@@ -110,7 +110,6 @@ def cli(ctx, *args, **kwargs):
     
     # Invoking default command
     if ctx.invoked_subcommand is None:
-        validate_commands(ctx, None, None)
         cmd = cli.get_command(ctx, 'exec')
         if not cmd:
             raise click.UsageError("Default 'exec' command not found.")
@@ -126,15 +125,3 @@ def load_plugins(cli_group):
                 f'Failed to load plugin {entry_point.name}: {e}',
                 fg='red', err=True
             )
-
-def validate_commands(ctx, param, values):
-    execute_command = ctx.params.get('execute_command')
-    commands_file = ctx.params.get('commands_file')
-    
-    if (not execute_command and not commands_file):
-        raise click.UsageError('You must provide either -e or -C')
-    
-    if (execute_command and commands_file):
-        raise click.UsageError('You must provide either -e or -C, but not both.')
-    
-    return values
