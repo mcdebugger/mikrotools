@@ -2,7 +2,7 @@ import click
 
 from click_option_group import optgroup, RequiredMutuallyExclusiveOptionGroup
 
-from mikrotools.cli.utils import common_options, Mutex
+from mikrotools.cli.utils import common_options
 from mikrotools.mikromanager import mikromanager_init
 from mikrotools.tools.config import get_hosts, get_commands
 
