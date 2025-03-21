@@ -27,6 +27,23 @@ class AliasedGroup(click.Group):
         
         return decorator_with_aliases_wrapper
     
+    def group(self, *args, **kwargs):
+        aliases = kwargs.pop('aliases', [])
+        decorator = super().group(*args, **kwargs)
+        if not aliases:
+            return decorator
+        
+        def decorator_with_aliases_wrapper(f):
+            cmd = decorator(f)
+            if aliases:
+                for alias in aliases:
+                    if alias in self.aliases:
+                        raise click.ClickException(f'Alias {alias} is already taken by {self.aliases[alias]}')
+                    self.aliases[alias] = cmd.name
+            return cmd
+        
+        return decorator_with_aliases_wrapper
+    
     def get_command(self, ctx, cmd_name):
         rv = click.Group.get_command(self, ctx, cmd_name)
         if rv is not None:
@@ -39,6 +56,7 @@ class AliasedGroup(click.Group):
         # Try to resolve ambiguous command
         matches = [x for x in self.list_commands(ctx)
                    if x.startswith(cmd_name)]
+        matches += [v for k, v in self.aliases.items() if k.startswith(cmd_name)]
         if not matches:
             return None
         elif len(matches) == 1:
