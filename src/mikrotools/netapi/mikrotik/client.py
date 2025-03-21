@@ -71,7 +71,7 @@ class MikrotikSSHClient():
         result = self.execute_command_raw(f'{path} add {expression}')
         
         if 'failure' or 'error' in result:
-            raise Exception(result)
+            raise Exception(result.strip())
     
     def execute_command(self, command: str) -> list[str]:
         """
