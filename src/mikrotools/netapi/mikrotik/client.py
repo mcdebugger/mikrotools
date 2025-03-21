@@ -104,6 +104,7 @@ class MikrotikSSHClient():
             
             if error:
                 raise RuntimeError(f'Error executing command: {error}')
+            logger.debug(f'Command execution result: {output}')
             
             return output
         except paramiko.SSHException as e:
