@@ -64,7 +64,7 @@ class MikrotikSSHClient():
         path = path.rstrip('/')
         
         for key, value in data.items():
-            expression += f'{key}={value} '
+            expression += f'{key}="{value}" '
         
         expression = expression.strip()
         
