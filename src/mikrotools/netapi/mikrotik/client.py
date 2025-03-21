@@ -56,6 +56,17 @@ class MikrotikSSHClient():
             self._ssh.close()
             self._connected = False
     
+    def add(self, path: str, data: dict[str, str]) -> None:
+        expression = ''
+        path = path.rstrip('/')
+        
+        for key, value in data.items():
+            expression += f'{key}={value} '
+        
+        expression = expression.strip()
+        
+        self.execute_command_raw(f'{path} add {expression}')
+    
     def execute_command(self, command: str) -> list[str]:
         """
         Execute a command on the Mikrotik device and return its output as a list of strings.
