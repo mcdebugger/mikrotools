@@ -108,6 +108,9 @@ class MikrotikSSHClient():
         for id in response.split(';'):
             ids.append(id.strip())
         
+        if ids == [""]:
+            ids = []
+        
         return ids
     
     def get(self, path: str, obj: str = None) -> str:
