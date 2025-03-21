@@ -3,6 +3,8 @@ from importlib.metadata import entry_points
 
 import click
 
+from click_option_group import optgroup
+
 from mikrotools.tools.log import setup_logging
 
 class AliasedGroup(click.Group):
@@ -86,22 +88,22 @@ class Mutex(click.Option):
         return super(Mutex, self).handle_parse_result(ctx, opts, args)
 
 def common_options(func):
-    @click.option('-H', '--host', help='Target host')
-    @click.option('-P', '--port', type=int, help='SSH port')
-    @click.option('-u', '--user', help='Username')
-    @click.option('-p', '--password', is_flag=True, help='Prompt for password')
-    @click.option('-c', '--config-file')
-    @click.option('-i', '--inventory-file')
-    @click.option('-j', '--jump', is_flag=True, help='Use jump host')
-    @click.option('-d', '--debug', is_flag=True, help='Enable debug mode')
+    @optgroup.group('SSH connection options')
+    @optgroup.option('-H', '--host', help='Target host')
+    @optgroup.option('-P', '--port', type=int, help='SSH port')
+    @optgroup.option('-u', '--user', help='Username')
+    @optgroup.option('-p', '--password', is_flag=True, help='Prompt for password')
+    @optgroup.option('-j', '--jump', is_flag=True, help='Use jump host')
+    @optgroup.option('-i', '--inventory-file', help='Inventory or hosts file')
+    @optgroup.group('Configuration options')
+    @optgroup.option('-c', '--config-file')
+    @optgroup.option('-d', '--debug', is_flag=True, help='Enable debug mode')
     @wraps(func)
     def wrapper(*args, **kwargs):
         return func(*args, **kwargs)
     return wrapper
 
-@click.group(cls=AliasedGroup, invoke_without_command=True, context_settings=dict(help_option_names=['-h', '--help']))
-@click.option('-e', '--execute-command', cls=Mutex, not_required_if=['commands_file'])
-@click.option('-C', '--commands-file', cls=Mutex, not_required_if=['execute_command'])
+@click.group(cls=AliasedGroup, context_settings=dict(help_option_names=['-h', '--help']))
 @common_options
 @click.pass_context
 def cli(ctx, *args, **kwargs):
@@ -109,11 +111,11 @@ def cli(ctx, *args, **kwargs):
     setup_logging(ctx.params['debug'])
     
     # Invoking default command
-    if ctx.invoked_subcommand is None:
-        cmd = cli.get_command(ctx, 'exec')
-        if not cmd:
-            raise click.UsageError("Default 'exec' command not found.")
-        ctx.invoke(cmd, *args, **kwargs)
+    # if ctx.invoked_subcommand is None:
+    #     cmd = cli.get_command(ctx, 'exec')
+    #     if not cmd:
+    #         raise click.UsageError("Default 'exec' command not found.")
+    #     ctx.invoke(cmd, *args, **kwargs)
 
 def load_plugins(cli_group):
     for entry_point in entry_points(group='mikrotools.plugins'):
