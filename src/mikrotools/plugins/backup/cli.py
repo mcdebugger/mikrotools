@@ -1,6 +1,6 @@
 import click
 
-from mikrotools.cli.utils import common_options
+from mikrotools.cli.options import common_options
 from mikrotools.mikromanager import mikromanager_init
 from mikrotools.tools.config import get_hosts
 

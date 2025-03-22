@@ -3,8 +3,7 @@ from importlib.metadata import entry_points
 
 import click
 
-from click_option_group import optgroup
-
+from mikrotools.cli.options import common_options
 from mikrotools.tools.log import setup_logging
 
 class AliasedGroup(click.Group):
@@ -86,22 +85,6 @@ class Mutex(click.Option):
                 else:
                     self.required = False
         return super(Mutex, self).handle_parse_result(ctx, opts, args)
-
-def common_options(func):
-    @optgroup.group('SSH connection options')
-    @optgroup.option('-H', '--host', help='Target host')
-    @optgroup.option('-P', '--port', type=int, help='SSH port')
-    @optgroup.option('-u', '--user', help='Username')
-    @optgroup.option('-p', '--password', is_flag=True, help='Prompt for password')
-    @optgroup.option('-j', '--jump', is_flag=True, help='Use jump host')
-    @optgroup.option('-i', '--inventory-file', help='Inventory or hosts file')
-    @optgroup.group('Configuration options')
-    @optgroup.option('-c', '--config-file')
-    @optgroup.option('-d', '--debug', is_flag=True, help='Enable debug mode')
-    @wraps(func)
-    def wrapper(*args, **kwargs):
-        return func(*args, **kwargs)
-    return wrapper
 
 @click.group(cls=AliasedGroup, context_settings=dict(help_option_names=['-h', '--help']))
 @common_options
