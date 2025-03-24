@@ -1,3 +1,4 @@
+import asyncio
 import click
 
 from mikrotools.cli.options import common_options
@@ -12,7 +13,7 @@ from .utils import list_hosts
 @common_options
 def list_routers(*args, **kwargs):
     hosts = get_hosts()
-    list_hosts(hosts)
+    asyncio.run(list_hosts(hosts))
 
 def register(cli_group):
     cli_group.add_command(list_routers)
