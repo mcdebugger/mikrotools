@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:e58793c9816df4be3d0d4e99e30f0feebd6ea02a9848c31b2c9431b1aeb3475d"
+content_hash = "sha256:139e1e0ac7f81e3d9cc627fe0973bc7c19d3de93e3f483b858ea21fdc264cf4f"
 
 [[metadata.targets]]
 requires_python = ">=3.11"
@@ -22,6 +22,21 @@ dependencies = [
 files = [
     {file = "annotated_types-0.7.0-py3-none-any.whl", hash = "sha256:1f02e8b43a8fbbc3f3e0d4f0f4bfc8131bcb4eebe8849b8e5c773f3a1c582a53"},
     {file = "annotated_types-0.7.0.tar.gz", hash = "sha256:aff07c09a53a08bc8cfccb9c85b05f1aa9a2a6f23728d790723543408344ce89"},
+]
+
+[[package]]
+name = "asyncssh"
+version = "2.20.0"
+requires_python = ">=3.6"
+summary = "AsyncSSH: Asynchronous SSHv2 client and server library"
+groups = ["default"]
+dependencies = [
+    "cryptography>=39.0",
+    "typing-extensions>=4.0.0",
+]
+files = [
+    {file = "asyncssh-2.20.0-py3-none-any.whl", hash = "sha256:af6888d937c07a4bf31293335a6166b4d87608cdb5957b49547da6ad87ecf174"},
+    {file = "asyncssh-2.20.0.tar.gz", hash = "sha256:020b6e384b2328ef8683908ad8e73de9ec2b9b62fd964571ea957bba98412983"},
 ]
 
 [[package]]
