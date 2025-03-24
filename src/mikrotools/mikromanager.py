@@ -7,7 +7,7 @@ from functools import wraps
 
 from mikrotools.cli.utils import cli, load_plugins
 from .config import load_config
-from .netapi import MikrotikManager
+from .netapi import MikrotikManager, AsyncMikrotikManager
 
 def mikromanager_init(f):
     @wraps(f)
@@ -36,6 +36,7 @@ def mikromanager_init(f):
         
         # Configuring MikrotikManager
         MikrotikManager.configure(config)
+        AsyncMikrotikManager.configure(config)
         
         return f(*args, **kwargs)
     
