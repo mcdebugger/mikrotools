@@ -1,3 +1,4 @@
+import asyncssh
 import logging
 import paramiko
 
@@ -226,3 +227,225 @@ class MikrotikSSHClient():
     
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.disconnect()
+
+class AsyncMikrotikSSHClient():
+    def __init__(self, host: str, username: str, password: str = None, keyfile: str = None, port: int = 22):
+        self._host = host
+        self._port = port
+        self._username = username
+        self._password = password
+        self._keyfile = keyfile
+        self._conn = None
+        self._connected = False
+    
+    async def connect(self) -> None:
+        if self._password is not None and self._keyfile == None:
+            await self._connect_with_password()
+        elif self._keyfile is not None and self._password == None:
+            await self._connect_with_key()
+        else:
+            raise Exception('Must provide either password or keyfile')
+    
+    async def _connect_with_password(self) -> None:
+        try:
+            self._conn = await asyncssh.connect(
+                host=self._host,
+                port=self._port,
+                username=self._username,
+                password=self._password,
+                known_hosts=None
+            )
+        except Exception as e:
+            raise e
+        else:
+            self._connected = True
+    
+    async def _connect_with_key(self) -> None:
+        try:
+            self._conn = await asyncssh.connect(
+                host=self._host,
+                port=self._port,
+                username=self._username,
+                client_keys=[self._keyfile],
+                known_hosts=None
+            )
+        except Exception as e:
+            raise e
+        else:
+            self._connected = True
+    
+    async def disconnect(self) -> None:
+        if self._connected and self._conn is not None:
+            try:
+                await self._conn.close()
+            except Exception:
+                pass
+            finally:
+                self._connected = False
+                self._conn = None
+
+    async def execute_command_raw(self, command: str) -> str:
+        """
+        Asynchronously execute a command on the Mikrotik device and return its output as a raw string.
+
+        :param command: The command to execute
+        :return: The output of the command
+        :raises: ConnectionError if not connected to the host
+                RuntimeError if the command execution fails
+        """
+        if not self._connected:
+            raise ConnectionError('Not connected to host')
+        
+        logger.debug(f'Executing command: {command}')
+        
+        try:
+            response = await self._conn.run(command)
+            result = response.stdout
+            error = response.stderr.strip()
+            
+            if error:
+                raise RuntimeError(f'Error executing command: {error}')
+            logger.debug(f'Command execution result: {result}')
+            
+            return result
+        except Exception as e:
+            raise e
+        
+    async def execute_command(self, command: str) -> list[str]:
+        """
+        Execute a command on the Mikrotik device and return its output as a list of strings.
+
+        :param command: The command to execute
+        :return: The output of the command
+        :raises: ConnectionError if not connected to the host
+             RuntimeError if the command execution fails
+        """
+        output = await self.execute_command_raw(command).strip().split('\n')
+        
+        return [line.strip() for line in output if line.strip()]
+
+    async def get(self, path: str, obj: str = None) -> str:
+        """
+        Retrieves an object from a path on the router.
+
+        Args:
+            path: The path to the object
+            obj: The object to retrieve
+
+        Returns:
+            The value of the object as a string
+        """
+        # Remove trailing slash
+        path = path.rstrip('/')
+        
+        if obj:
+            path = f'{path} get {obj}'
+        else:
+            path = f'{path} get'
+        
+        result = await self.execute_command_raw(f':put [{path}]')
+        
+        return result.strip()
+
+    async def get_dict(self, path: str, obj: str = None) -> dict[str, str]:
+        """
+        Retrieves a dictionary representation of an object's properties from a path on the router.
+
+        Args:
+            path: The path to the object.
+            obj: The object to retrieve. Optional, if not specified, retrieves default object.
+
+        Returns:
+            A dictionary where keys are the object's property names and values are the corresponding
+            property values, extracted from the response string.
+        """
+        result = {}
+        current_key = None
+        
+        response = await self.get(path, obj)
+        
+        for part in response.split(';'):
+            part = part.strip()
+            if not part:
+                continue
+            
+            if '=' in part:
+                key, value = part.split('=', 1)
+                current_key = key.strip()
+                result[current_key] = value.strip()
+            elif current_key and current_key in result:
+                result[current_key] += ';' + part.strip()
+
+        return result
+
+    async def find(self, path: str, filters: list[Filter] | None = None) -> list[str]:
+        ids = []
+        
+        # Remove trailing slash
+        path = path.rstrip('/')
+        
+        if filters is not None:
+            path = f'{path} find where {filters.to_cli()}'
+        else:
+            path = f'{path} find'
+        
+        response = await self.execute_command_raw(f':put [{path}]').strip()
+        for id in response.split(';'):
+            ids.append(id.strip())
+        
+        if ids == [""]:
+            ids = []
+        
+        return ids
+
+    async def get_identity(self) -> str:
+        """
+        Retrieves the identity of the router.
+
+        Returns:
+            The identity of the router as a string.
+        """
+        return await self.get('/system identity', 'name')
+
+    async def get_current_firmware_version(self) -> str:
+        """
+        Retrieves the current firmware version of the router.
+
+        Returns:
+            The current firmware version as a string.
+        """
+        return await self.get('/system routerboard', 'current-firmware')
+
+    async def get_upgrade_firmware_version(self) -> str:
+        """
+        Retrieves the upgrade firmware version of the router.
+
+        Returns:
+            The upgrade firmware version as a string.
+        """
+        return await self.get('/system routerboard', 'upgrade-firmware')
+
+    async def get_routeros_installed_version(self) -> str:
+        """
+        Retrieves the currently installed version of RouterOS.
+
+        Returns:
+            The installed version of RouterOS as a string.
+        """
+        return await self.get('/system package update', 'installed-version')
+
+    async def get_routeros_latest_version(self) -> str:
+        """
+        Retrieves the latest version of RouterOS available for upgrade.
+
+        Returns:
+            The latest version of RouterOS as a string.
+        """
+        return await self.get('/system package update', 'latest-version')
+
+    async def __aenter__(self):
+        await self.connect()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.disconnect()

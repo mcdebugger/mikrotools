@@ -1,7 +1,9 @@
-from .client import MikrotikSSHClient
-from .manager import MikrotikManager
+from .client import MikrotikSSHClient, AsyncMikrotikSSHClient
+from .manager import MikrotikManager, AsyncMikrotikManager
 
 __all__ = [
     'MikrotikSSHClient',
-    'MikrotikManager'
+    'MikrotikManager',
+    'AsyncMikrotikSSHClient',
+    'AsyncMikrotikManager'
 ]
