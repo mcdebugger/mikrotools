@@ -306,7 +306,7 @@ async def upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts: list[Mikr
         console.print(
             f'[sky_blue2]Host: [/][bold green]{host.identity}[/]'
             f' ([medium_purple1]{host.address}[/]) '
-            f'[blue]\\[[red]{host.installed_routeros_version} [yellow]> [green]{host.latest_routeros_version}[blue]]'
+            f'[blue]\\[[red]{host.installed_routeros_version} [hot_pink]> [green]{host.latest_routeros_version}[blue]]'
         )
 
     answer = console.input(f'\n[bold yellow]Are you sure you want to proceed? [red]\\[y/N]')
