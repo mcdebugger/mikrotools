@@ -221,7 +221,10 @@ async def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
     offline = 0
     counter = 0
     
-    rprint(f'[grey27]Checking for hosts applicable for RouterOS upgrade...')
+    console = Console()
+    
+    console.show_cursor(False)
+    console.print(f'[grey27]Checking for hosts applicable for RouterOS upgrade...')
     print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed)
     
     for address in addresses:
@@ -248,6 +251,7 @@ async def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
             print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed, address=task.get_name())
     
     print('\r\033[K', end='\r')
+    console.show_cursor()
     
     logger.debug(f'get_routeros_upgradable_hosts: Upgradable hosts: {upgradable_hosts}')
     
