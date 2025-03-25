@@ -73,9 +73,16 @@ def get_firmware_upgradable_hosts(addresses):
     upgradable_hosts = []
     failed = 0
     offline = 0
-    counter = 1
+    counter = 0
+    
+    console = Console()
+    
+    console.show_cursor(False)
+    console.print(f'[grey27]Checking for hosts applicable for firmware upgrade...')
+    print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed)
     
     for address in addresses:
+        counter += 1
         host = MikrotikHost(address=address)
         print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed, address=address)
         
@@ -87,19 +94,16 @@ def get_firmware_upgradable_hosts(addresses):
                 host.upgrade_firmware_version = device.get_upgrade_firmware_version()
         except TimeoutError:
             offline += 1
-            counter += 1
             continue
         except Exception as e:
             failed += 1
-            counter += 1
             continue
         
         if is_upgradable(host.current_firmware_version, host.upgrade_firmware_version):
             upgradable_hosts.append(host)
-        
-        counter += 1
     
     print('\r\033[K', end='\r')
+    console.show_cursor()
     
     return upgradable_hosts
 
@@ -216,11 +220,15 @@ async def get_host_if_routeros_upgradable(address) -> MikrotikHost:
 async def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
     tasks = []
     upgradable_hosts = []
+    addresses_with_error = []
     failed = 0
     offline = 0
     counter = 0
     
-    rprint(f'[grey27]Checking for hosts applicable for RouterOS upgrade...')
+    console = Console()
+    
+    console.show_cursor(False)
+    console.print(f'[grey27]Checking for hosts applicable for RouterOS upgrade...')
     print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed)
     
     for address in addresses:
@@ -233,8 +241,10 @@ async def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
             host = await task
         except TimeoutError:
             offline += 1
+            addresses_with_error.append((task.get_name(), 'Connection timeout'))
             continue
         except Exception as e:
+            addresses_with_error.append((task.get_name(), e))
             failed += 1
             continue
         
@@ -245,10 +255,11 @@ async def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
             print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed, address=task.get_name())
     
     print('\r\033[K', end='\r')
+    console.show_cursor()
     
     logger.debug(f'get_routeros_upgradable_hosts: Upgradable hosts: {upgradable_hosts}')
     
-    return upgradable_hosts
+    return upgradable_hosts, addresses_with_error
 
 async def upgrade_hosts_routeros_start(addresses: list[str]) -> None:
     """
@@ -260,11 +271,10 @@ async def upgrade_hosts_routeros_start(addresses: list[str]) -> None:
     Args:
         addresses (list[str]): A list of IP addresses or hostnames to check.
     """
-    upgradable_hosts = await get_routeros_upgradable_hosts(addresses)
-    await upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts)
+    upgradable_hosts, addresses_with_error = await get_routeros_upgradable_hosts(addresses)
+    await upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts, addresses_with_error)
 
-async def upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts: list[MikrotikHost]) -> None:
-    # Checks if there are any hosts to upgrade
+async def upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts: list[MikrotikHost], addresses_with_error: list[tuple[str, str]]) -> None:
     """
     Prompts the user to confirm whether they want to upgrade the specified hosts.
 
@@ -276,22 +286,30 @@ async def upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts: list[Mikr
         upgradable_hosts (list[MikrotikHost]): A list of objects each containing the
             information of a host to be upgraded.
     """
+    console = Console(highlight=False)
+    
+    if len(addresses_with_error) > 0:
+        console.print('[orange1]The following hosts failed to check for RouterOS updates:\n')
+        for address, error in addresses_with_error:
+            console.print(f'[light_slate_blue]Host: [bold sky_blue1]{address} [red]{error}')
+        console.line()
+    
     if len(upgradable_hosts) == 0:
-        print(f'{fcolors.bold}{fcolors.green}No hosts to upgrade RouterOS{fcolors.default}')
+        console.print(f'[bold green]No hosts to upgrade RouterOS')
         exit()
     
     # Prints the list of hosts that will be upgraded
-    print(f'{fcolors.bold}{fcolors.yellow}Upgradable hosts: {fcolors.red}{len(upgradable_hosts)}{fcolors.default}')
-    print(f'\nThe following list of devices will be upgraded:\n')
+    console.print(f'[bold yellow]Upgradable hosts: [red]{len(upgradable_hosts)}')
+    console.print(f'\nThe following list of devices will be upgraded:\n')
     
     for host in upgradable_hosts:
-        print(f'{fcolors.lightblue}Host: {fcolors.bold}{fcolors.green}{host.identity}'
-              f'{fcolors.default} ({fcolors.lightpurple}{host.address}{fcolors.default}) '
-              f'{fcolors.blue}[{fcolors.red}{host.installed_routeros_version} > {fcolors.green}{host.latest_routeros_version}{fcolors.blue}]'
-              f'{fcolors.default}')
+        console.print(
+            f'[sky_blue2]Host: [/][bold green]{host.identity}[/]'
+            f' ([medium_purple1]{host.address}[/]) '
+            f'[blue]\\[[red]{host.installed_routeros_version} > [green]{host.latest_routeros_version}[blue]]'
+        )
 
-    print(f'\n{fcolors.bold}{fcolors.yellow}Are you sure you want to proceed? {fcolors.red}[y/N]{fcolors.default}')
-    answer = input()
+    answer = console.input(f'\n[bold yellow]Are you sure you want to proceed? [red]\\[y/N]')
     
     if answer.lower() == 'y':
         upgrade_hosts_routeros_apply(upgradable_hosts)

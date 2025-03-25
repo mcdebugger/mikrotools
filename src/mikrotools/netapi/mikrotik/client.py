@@ -287,7 +287,8 @@ class AsyncMikrotikSSHClient():
                 self._connected = False
                 self._conn = None
 
-    async def is_connected(self) -> bool:
+    @property
+    def is_connected(self) -> bool:
         return self._connected
     
     async def execute_command_raw(self, command: str) -> str:
