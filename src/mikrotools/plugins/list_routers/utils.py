@@ -12,7 +12,7 @@ from mikrotools.netapi import MikrotikManager, AsyncMikrotikManager
 
 async def get_host_info(address):
     host = MikrotikHost(address=address)
-    client = await asyncio.wait_for(AsyncMikrotikManager.get_connection(address), timeout=5)
+    client = await asyncio.wait_for(AsyncMikrotikManager.get_connection(address), timeout=10)
     async with client as device:
         host.identity = await device.get_identity()
         host.public_address = await device.get('/ip cloud', 'public-address')
