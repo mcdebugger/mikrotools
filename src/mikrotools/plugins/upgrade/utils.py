@@ -27,7 +27,7 @@ def is_upgradable(current_version, upgrade_version):
     if current_version and upgrade_version:
         return version.parse(current_version) < version.parse(upgrade_version)
 
-def print_check_upgradable_progress(address: str, counter, total, outdated, offline, failed=0, identity: str = None):
+def print_check_upgradable_progress(counter, total, outdated, offline, failed=0, address: str = None, identity: str = None):
     console = Console()
     
     if offline > 0:
@@ -41,9 +41,9 @@ def print_check_upgradable_progress(address: str, counter, total, outdated, offl
         failed_color = 'green'
     
     print('\r\033[K', end='\r')
-    console.print(f'[grey27]Checking host [sky_blue2]'
+    console.print(f'[grey27]Checked hosts: [sky_blue2]'
                   f'{f"{identity} " if identity is not None else ""}'
-                  f'[cyan]([yellow]{address}[cyan]) '
+                  f'{f"[cyan]([yellow]{address}[cyan]) " if address is not None else ""}'
                   f'[red]\\[{counter}/{total}] '
                   f'[medium_purple1]| [cyan]Upgradable: [medium_purple1]{outdated} '
                   f'[medium_purple1]| [cyan]Offline: [{offline_color}]{offline} '
@@ -76,12 +76,12 @@ def get_firmware_upgradable_hosts(addresses):
     
     for address in addresses:
         host = MikrotikHost(address=address)
-        print_check_upgradable_progress(host.address, counter, len(addresses), len(upgradable_hosts), offline, failed)
+        print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed, address=address)
         
         try:
             with MikrotikManager.get_connection(address) as device:
                 host.identity = device.get_identity()
-                print_check_upgradable_progress(address, counter, len(addresses), len(upgradable_hosts), offline, failed, identity=host.identity)
+                print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed, address=address, identity=host.identity)
                 host.current_firmware_version = device.get_current_firmware_version()
                 host.upgrade_firmware_version = device.get_upgrade_firmware_version()
         except TimeoutError:
@@ -220,6 +220,7 @@ async def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
     counter = 0
     
     rprint(f'[grey27]Checking for hosts applicable for RouterOS upgrade...')
+    print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed)
     
     for address in addresses:
         task = asyncio.create_task(get_host_if_routeros_upgradable(address), name=address)
@@ -227,7 +228,7 @@ async def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
     
     async for task in asyncio.as_completed(tasks):
         counter += 1
-        print_check_upgradable_progress(task.get_name(), counter, len(addresses), len(upgradable_hosts), offline, failed)
+        print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed, address=task.get_name())
         try:
             host = await task
         except TimeoutError:
