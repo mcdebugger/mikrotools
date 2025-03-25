@@ -1,6 +1,7 @@
 import asyncio
 
 from asyncssh.misc import PermissionDenied
+from ipaddress import IPv4Address
 from packaging import version
 from paramiko import AuthenticationException
 from rich.box import SIMPLE
@@ -29,7 +30,7 @@ async def print_table(rows):
     table = await create_table()
     
     console.clear()
-    for row in sorted(rows):
+    for row in sorted(rows, key=IPv4Address):
         host, failed, error_message = rows[row]
         await add_row(table, host, failed, error_message)
     console.print(table)
