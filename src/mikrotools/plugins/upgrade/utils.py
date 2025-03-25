@@ -201,7 +201,7 @@ def upgrade_host_firmware(host):
 
 # Upgrade RouterOS
 
-async def get_roteros_upgradable_host(address) -> MikrotikHost:
+async def get_host_if_routeros_upgradable(address) -> MikrotikHost:
     async with await AsyncMikrotikManager.get_connection(address) as device:
         await device.execute_command_raw('/system package update check-for-updates')
         routerboard = await device.get_system_package_update()
@@ -220,7 +220,7 @@ async def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
     counter = 0
     
     for address in addresses:
-        task = asyncio.create_task(get_roteros_upgradable_host(address), name=address)
+        task = asyncio.create_task(get_host_if_routeros_upgradable(address), name=address)
         tasks.append(task)
     
     async for task in asyncio.as_completed(tasks):
