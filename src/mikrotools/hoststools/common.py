@@ -1,11 +1,42 @@
+import asyncio
+
+from packaging import version
 from rich import print as rprint
 from rich.console import Console
 from rich.prompt import Confirm
 
 from .models import MikrotikHost
 
-from mikrotools.netapi import MikrotikManager
+from mikrotools.netapi import MikrotikManager, AsyncMikrotikManager
 
+async def get_mikrotik_host(address: str) -> MikrotikHost:
+    async with await AsyncMikrotikManager.get_connection(address) as device:
+        identity = await device.get_identity()
+        installed_routeros_version = await device.get_routeros_installed_version()
+        latest_routeros_version = await device.get_routeros_latest_version()
+        current_firmware_version = await device.get_current_firmware_version()
+        upgrade_firmware_verion = await device.get_upgrade_firmware_version()
+        cpu_load = int(await device.get('/system resource', 'cpu-load'))
+        model = await device.get('/system routerboard', 'model')
+        if version.parse(installed_routeros_version) >= version.parse('7.0'):
+            uptime = await device.get('/system resource', 'uptime as-string')
+        else:
+            uptime = await device.get('/system resource', 'uptime')
+        public_address = await device.get('/ip cloud', 'public-address')
+    
+    return MikrotikHost(
+        address=address,
+        identity=identity,
+        installed_routeros_version=installed_routeros_version,
+        latest_routeros_version=latest_routeros_version,
+        current_firmware_version=current_firmware_version,
+        upgrade_firmware_version=upgrade_firmware_verion,
+        cpu_load=cpu_load,
+        model=model,
+        uptime=uptime,
+        public_address=public_address
+    )
+                
 def print_reboot_progress(host, counter, total, remaining):
     # Clears the current line
     print('\r\033[K', end='')

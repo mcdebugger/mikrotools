@@ -1,11 +1,16 @@
+import asyncio
+import logging
+
 from packaging import version
 from rich.console import Console
 
-from mikrotools.hoststools.common import reboot_hosts
+from mikrotools.hoststools.common import get_mikrotik_host, reboot_hosts
 from mikrotools.hoststools.models import MikrotikHost
 
-from mikrotools.netapi import MikrotikManager
+from mikrotools.netapi import MikrotikManager, AsyncMikrotikManager
 from mikrotools.tools.colors import fcolors_256 as fcolors
+
+logger = logging.getLogger(__name__)
 
 def is_upgradable(current_version, upgrade_version):
     """
@@ -21,7 +26,7 @@ def is_upgradable(current_version, upgrade_version):
     if current_version and upgrade_version:
         return version.parse(current_version) < version.parse(upgrade_version)
 
-def print_check_upgradable_progress(host, counter, total, outdated, offline, failed=0):
+def print_check_upgradable_progress(address: str, counter, total, outdated, offline, failed=0, identity: str = None):
     console = Console()
     
     if offline > 0:
@@ -36,8 +41,8 @@ def print_check_upgradable_progress(host, counter, total, outdated, offline, fai
     
     print('\r\033[K', end='\r')
     console.print(f'[grey27]Checking host [sky_blue2]'
-                  f'{host.identity if host.identity is not None else "-"} '
-                  f'[cyan]([yellow]{host.address}[cyan]) '
+                  f'{f"{identity} " if identity is not None else ""}'
+                  f'[cyan]([yellow]{address}[cyan]) '
                   f'[red]\\[{counter}/{total}] '
                   f'[medium_purple1]| [cyan]Upgradable: [medium_purple1]{outdated} '
                   f'[medium_purple1]| [cyan]Offline: [{offline_color}]{offline} '
@@ -68,12 +73,12 @@ def get_firmware_upgradable_hosts(addresses):
     
     for address in addresses:
         host = MikrotikHost(address=address)
-        print_check_upgradable_progress(host, counter, len(addresses), len(upgradable_hosts), offline, failed)
+        print_check_upgradable_progress(host.address, counter, len(addresses), len(upgradable_hosts), offline, failed)
         
         try:
             with MikrotikManager.get_connection(address) as device:
                 host.identity = device.get_identity()
-                print_check_upgradable_progress(host, counter, len(addresses), len(upgradable_hosts), offline, failed)
+                print_check_upgradable_progress(address, counter, len(addresses), len(upgradable_hosts), offline, failed, identity=host.identity)
                 host.current_firmware_version = device.get_current_firmware_version()
                 host.upgrade_firmware_version = device.get_upgrade_firmware_version()
         except TimeoutError:
@@ -94,39 +99,50 @@ def get_firmware_upgradable_hosts(addresses):
     
     return upgradable_hosts
 
-def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
+async def get_roteros_upgradable_host(address) -> MikrotikHost:
+    async with await AsyncMikrotikManager.get_connection(address) as device:
+        await device.execute_command_raw('/system package update check-for-updates')
+        routerboard = await device.get_system_package_update()
+        
+        routerboard.latest_version = '7.20'
+        if is_upgradable(routerboard.installed_version, routerboard.latest_version):
+            return await get_mikrotik_host(address)
+        else:
+            return None
+
+async def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
+    tasks = []
     upgradable_hosts = []
     failed = 0
     offline = 0
-    counter = 1
+    counter = 0
     
     for address in addresses:
-        host = MikrotikHost(address=address)
-        print_check_upgradable_progress(host, counter, len(addresses), len(upgradable_hosts), offline, failed)
+        task = asyncio.create_task(get_roteros_upgradable_host(address), name=address)
+        tasks.append(task)
+    
+    async for task in asyncio.as_completed(tasks):
+        counter += 1
+        print_check_upgradable_progress(task.get_name(), counter, len(addresses), len(upgradable_hosts), offline, failed)
         try:
-            with MikrotikManager.get_connection(address) as device:
-                host.identity = device.get_identity()
-                print_check_upgradable_progress(host, counter, len(addresses), len(upgradable_hosts), offline, failed)
-                device.execute_command_raw('/system package update check-for-updates')
-                host.installed_routeros_version = device.get_routeros_installed_version()
-                host.latest_routeros_version = device.get('/system package update', 'latest-version')
+            host = await task
         except TimeoutError:
             offline += 1
-            counter += 1
             continue
         except Exception as e:
             failed += 1
-            counter += 1
             continue
         
-        if is_upgradable(host.installed_routeros_version, host.latest_routeros_version):
+        if host is not None:
             upgradable_hosts.append(host)
-        
-        counter += 1
     
     print('\r\033[K', end='\r')
     
+    logger.debug(f'get_routeros_upgradable_hosts: Upgradable hosts: {upgradable_hosts}')
+    
     return upgradable_hosts
+
+# Upgrade firmware
 
 def upgrade_hosts_firmware_start(addresses):
     """
@@ -226,7 +242,9 @@ def upgrade_host_firmware(host):
     except Exception as e:
         pass
 
-def upgrade_hosts_routeros_start(addresses: list[str]) -> None:
+# Upgrade RouterOS
+
+async def upgrade_hosts_routeros_start(addresses: list[str]) -> None:
     """
     Starts the process of upgrading RouterOS on the given hosts.
 
@@ -236,10 +254,10 @@ def upgrade_hosts_routeros_start(addresses: list[str]) -> None:
     Args:
         addresses (list[str]): A list of IP addresses or hostnames to check.
     """
-    upgradable_hosts = get_routeros_upgradable_hosts(addresses)
-    upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts)
+    upgradable_hosts = await get_routeros_upgradable_hosts(addresses)
+    await upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts)
 
-def upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts: list[MikrotikHost]) -> None:
+async def upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts: list[MikrotikHost]) -> None:
     # Checks if there are any hosts to upgrade
     """
     Prompts the user to confirm whether they want to upgrade the specified hosts.

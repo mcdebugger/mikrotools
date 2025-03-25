@@ -1,8 +1,11 @@
+import asyncio
+
 import asyncssh
 import logging
 import paramiko
 
 from .filters import Filter
+from .models import *
 
 logger = logging.getLogger(__name__)
 
@@ -238,37 +241,37 @@ class AsyncMikrotikSSHClient():
         self._conn = None
         self._connected = False
     
-    async def connect(self) -> None:
+    async def connect(self, timeout: int = 10) -> None:
         if self._password is not None and self._keyfile == None:
-            await self._connect_with_password()
+            await self._connect_with_password(timeout)
         elif self._keyfile is not None and self._password == None:
-            await self._connect_with_key()
+            await self._connect_with_key(timeout)
         else:
             raise Exception('Must provide either password or keyfile')
     
-    async def _connect_with_password(self) -> None:
+    async def _connect_with_password(self, timeout: int) -> None:
         try:
-            self._conn = await asyncssh.connect(
+            self._conn = await asyncio.wait_for(asyncssh.connect(
                 host=self._host,
                 port=self._port,
                 username=self._username,
                 password=self._password,
                 known_hosts=None
-            )
+            ), timeout=timeout)
         except Exception as e:
             raise e
         else:
             self._connected = True
     
-    async def _connect_with_key(self) -> None:
+    async def _connect_with_key(self, timeout: int) -> None:
         try:
-            self._conn = await asyncssh.connect(
+            self._conn = await asyncio.wait_for(asyncssh.connect(
                 host=self._host,
                 port=self._port,
                 username=self._username,
                 client_keys=[self._keyfile],
                 known_hosts=None
-            )
+            ), timeout=timeout)
         except Exception as e:
             raise e
         else:
@@ -284,6 +287,9 @@ class AsyncMikrotikSSHClient():
                 self._connected = False
                 self._conn = None
 
+    async def is_connected(self) -> bool:
+        return self._connected
+    
     async def execute_command_raw(self, command: str) -> str:
         """
         Asynchronously execute a command on the Mikrotik device and return its output as a raw string.
@@ -443,6 +449,10 @@ class AsyncMikrotikSSHClient():
         """
         return await self.get('/system package update', 'latest-version')
 
+    # Model getters
+    async def get_system_package_update(self) -> SystemPackageUpdate:
+        return SystemPackageUpdate(**await self.get_dict('/system package update'))
+    
     async def __aenter__(self):
         await self.connect()
         return self

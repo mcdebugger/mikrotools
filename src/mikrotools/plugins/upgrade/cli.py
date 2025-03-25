@@ -1,3 +1,4 @@
+import asyncio
 import click
 
 from mikrotools.cli.utils import common_options
@@ -11,7 +12,7 @@ from .utils import get_outdated_hosts, list_outdated_hosts, upgrade_hosts_firmwa
 @common_options
 def upgrade(*args, **kwargs):
     hosts = get_hosts()
-    upgrade_hosts_routeros_start(hosts)
+    asyncio.run(upgrade_hosts_routeros_start(hosts))
 
 @click.command(help='Upgrade routers with outdated firmware')
 @mikromanager_init
