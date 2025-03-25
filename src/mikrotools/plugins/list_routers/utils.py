@@ -10,6 +10,30 @@ from rich.table import Table
 from mikrotools.hoststools.models import MikrotikHost
 from mikrotools.netapi import MikrotikManager, AsyncMikrotikManager
 
+async def create_table():
+    table = Table(title="[green]List of hosts", show_header=True, header_style="bold grey78", box=SIMPLE)
+    
+    table.add_column("Host", justify="left")
+    table.add_column("Address", justify="left")
+    table.add_column('Public Address', justify="left")
+    table.add_column("RouterOS", justify="left")
+    table.add_column("Firmware", justify="left")
+    table.add_column("Model", justify="left")
+    table.add_column("CPU %", justify="right")
+    table.add_column("Uptime", justify="left")
+    
+    return table
+
+async def print_table(rows):
+    console = Console()
+    table = await create_table()
+    
+    console.clear()
+    for row in sorted(rows):
+        host, failed, error_message = rows[row]
+        await add_row(table, host, failed, error_message)
+    console.print(table)
+
 async def get_host_info(address):
     host = MikrotikHost(address=address)
     client = await asyncio.wait_for(AsyncMikrotikManager.get_connection(address), timeout=10)
@@ -30,22 +54,13 @@ async def get_host_info(address):
 async def list_hosts(addresses):
     offline_hosts = 0
     console = Console()
-    table = Table(title="[green]List of hosts", show_header=True, header_style="bold grey78", box=SIMPLE)
-    
-    table.add_column("Host", justify="left")
-    table.add_column("Address", justify="left")
-    table.add_column('Public Address', justify="left")
-    table.add_column("RouterOS", justify="left")
-    table.add_column("Firmware", justify="left")
-    table.add_column("Model", justify="left")
-    table.add_column("CPU %", justify="right")
-    table.add_column("Uptime", justify="left")
-    
-    # console.clear()
+    table = await create_table()
+    console.clear()
     console.print(table)
     
     hosts = []
     tasks = []
+    rows = {}
     
     for address in addresses:
         task = asyncio.create_task(get_host_info(address), name=address)
@@ -70,20 +85,19 @@ async def list_hosts(addresses):
             failed = True
             host = MikrotikHost(address=task.get_name())
             error_message = str(e)
-            
-        await add_row(table, host, failed, error_message)
-        console.clear()
-        console.print(table)
+        
+        rows[task.get_name()] = (host, failed, error_message)
+        
+        await print_table(rows)
 
-    console.clear()
-    console.print(table)
+    await print_table(rows)
         
     console.print(f'[medium_purple1]{"-" * 15}')
     console.print(f'[cornflower_blue]Total hosts: '
-                    f'[light_steel_blue1]{len(table.rows)} '
+                    f'[light_steel_blue1]{len(rows)} '
                     f'[medium_purple1]| '
                     f'[cornflower_blue]Online hosts: '
-                    f'[green]{len(table.rows) - offline_hosts} '
+                    f'[green]{len(rows) - offline_hosts} '
                     f'[medium_purple1]| '
                     f'[cornflower_blue]Offline hosts: '
                     f'[red]{offline_hosts} '
