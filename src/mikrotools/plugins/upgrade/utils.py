@@ -47,7 +47,7 @@ def print_check_upgradable_progress(counter, total, outdated, offline, failed=0,
                   f'[medium_purple1]| [cyan]Offline: [{offline_color}]{offline} '
                   f'[medium_purple1]| [cyan]Errors: [{failed_color}]{failed}'
                   f'{" [medium_purple1]| [cyan]Last checked:" if identity is not None or address is not None else ""}'
-                  f'{f" [sky_blue2]{identity} " if identity is not None else ""}'
+                  f'{f" [sky_blue2]{identity}" if identity is not None else ""}'
                   f'{f" [cyan]([yellow]{address}[cyan])" if address is not None else ""}',
                   end=''
                   )
