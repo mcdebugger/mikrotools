@@ -101,7 +101,7 @@ class AsyncMikrotikManager():
     async def get_connection(cls, host: str) -> AsyncMikrotikSSHClient:
         if host in cls._connections:
             client = cls._connections[host]
-            if client and client.is_connected():
+            if client and await client.is_connected():
                 return client
             else:
                 del cls._connections[host]
