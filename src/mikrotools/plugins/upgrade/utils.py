@@ -3,6 +3,7 @@ import logging
 
 from packaging import version
 from rich.console import Console
+from rich import print as rprint
 
 from mikrotools.hoststools.common import get_mikrotik_host, reboot_hosts
 from mikrotools.hoststools.models import MikrotikHost
@@ -217,6 +218,8 @@ async def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
     failed = 0
     offline = 0
     counter = 0
+    
+    rprint(f'[grey27]Checking for hosts applicable for RouterOS upgrade...')
     
     for address in addresses:
         task = asyncio.create_task(get_host_if_routeros_upgradable(address), name=address)
