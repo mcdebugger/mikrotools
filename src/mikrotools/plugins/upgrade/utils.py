@@ -67,6 +67,35 @@ def print_outdated_progress(host, counter, total, outdated, offline):
             f'{fcolors.cyan}Offline: {fcolors.red}{offline}{fcolors.default}',
             end='')
 
+def print_upgradable_hosts(upgradable_hosts: list[MikrotikHost], addresses_with_error: list[tuple[str, str]], subject: str = None):
+    console = Console(highlight=False)
+    
+    if len(addresses_with_error) > 0:
+        console.print(f'[orange1]The following hosts failed to check for '
+                      f'{f"{subject} " if subject is not None else ""}updates:\n')
+        for address, error in addresses_with_error:
+            console.print(f'[light_slate_blue]Host: [bold sky_blue1]{address} [red]{error}')
+        console.line()
+    
+    if len(upgradable_hosts) == 0:
+        console.print(f'[bold green]No hosts to upgrade RouterOS')
+        exit()
+    
+    # Prints the list of hosts that will be upgraded
+    console.print(f'[bold yellow]Upgradable hosts: [red]{len(upgradable_hosts)}')
+    console.line()
+    console.print(
+        f'{f"{subject} on the" if subject is not None else "The"}'
+        f' following list of devices will be upgraded:\n'
+    )
+    
+    for host in upgradable_hosts:
+        console.print(
+            f'[sky_blue2]Host: [/][bold green]{host.identity}[/]'
+            f' ([medium_purple1]{host.address}[/]) '
+            f'[blue]\\[[red]{host.installed_routeros_version} [hot_pink]> [green]{host.latest_routeros_version}[blue]]'
+        )
+
 # Upgrade firmware
 
 def get_firmware_upgradable_hosts(addresses):
@@ -288,27 +317,8 @@ async def upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts: list[Mikr
     """
     console = Console(highlight=False)
     
-    if len(addresses_with_error) > 0:
-        console.print('[orange1]The following hosts failed to check for RouterOS updates:\n')
-        for address, error in addresses_with_error:
-            console.print(f'[light_slate_blue]Host: [bold sky_blue1]{address} [red]{error}')
-        console.line()
+    print_upgradable_hosts(upgradable_hosts, addresses_with_error, subject='RouterOS')
     
-    if len(upgradable_hosts) == 0:
-        console.print(f'[bold green]No hosts to upgrade RouterOS')
-        exit()
-    
-    # Prints the list of hosts that will be upgraded
-    console.print(f'[bold yellow]Upgradable hosts: [red]{len(upgradable_hosts)}')
-    console.print(f'\nThe following list of devices will be upgraded:\n')
-    
-    for host in upgradable_hosts:
-        console.print(
-            f'[sky_blue2]Host: [/][bold green]{host.identity}[/]'
-            f' ([medium_purple1]{host.address}[/]) '
-            f'[blue]\\[[red]{host.installed_routeros_version} [hot_pink]> [green]{host.latest_routeros_version}[blue]]'
-        )
-
     answer = console.input(f'\n[bold yellow]Are you sure you want to proceed? [red]\\[y/N]')
     
     if answer.lower() == 'y':
