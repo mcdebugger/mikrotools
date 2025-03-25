@@ -65,6 +65,8 @@ def print_outdated_progress(host, counter, total, outdated, offline):
             f'{fcolors.cyan}Offline: {fcolors.red}{offline}{fcolors.default}',
             end='')
 
+# Upgrade firmware
+
 def get_firmware_upgradable_hosts(addresses):
     upgradable_hosts = []
     failed = 0
@@ -98,51 +100,6 @@ def get_firmware_upgradable_hosts(addresses):
     print('\r\033[K', end='\r')
     
     return upgradable_hosts
-
-async def get_roteros_upgradable_host(address) -> MikrotikHost:
-    async with await AsyncMikrotikManager.get_connection(address) as device:
-        await device.execute_command_raw('/system package update check-for-updates')
-        routerboard = await device.get_system_package_update()
-        
-        routerboard.latest_version = '7.20'
-        if is_upgradable(routerboard.installed_version, routerboard.latest_version):
-            return await get_mikrotik_host(address)
-        else:
-            return None
-
-async def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
-    tasks = []
-    upgradable_hosts = []
-    failed = 0
-    offline = 0
-    counter = 0
-    
-    for address in addresses:
-        task = asyncio.create_task(get_roteros_upgradable_host(address), name=address)
-        tasks.append(task)
-    
-    async for task in asyncio.as_completed(tasks):
-        counter += 1
-        print_check_upgradable_progress(task.get_name(), counter, len(addresses), len(upgradable_hosts), offline, failed)
-        try:
-            host = await task
-        except TimeoutError:
-            offline += 1
-            continue
-        except Exception as e:
-            failed += 1
-            continue
-        
-        if host is not None:
-            upgradable_hosts.append(host)
-    
-    print('\r\033[K', end='\r')
-    
-    logger.debug(f'get_routeros_upgradable_hosts: Upgradable hosts: {upgradable_hosts}')
-    
-    return upgradable_hosts
-
-# Upgrade firmware
 
 def upgrade_hosts_firmware_start(addresses):
     """
@@ -243,6 +200,49 @@ def upgrade_host_firmware(host):
         pass
 
 # Upgrade RouterOS
+
+async def get_roteros_upgradable_host(address) -> MikrotikHost:
+    async with await AsyncMikrotikManager.get_connection(address) as device:
+        await device.execute_command_raw('/system package update check-for-updates')
+        routerboard = await device.get_system_package_update()
+        
+        routerboard.latest_version = '7.20'
+        if is_upgradable(routerboard.installed_version, routerboard.latest_version):
+            return await get_mikrotik_host(address)
+        else:
+            return None
+
+async def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
+    tasks = []
+    upgradable_hosts = []
+    failed = 0
+    offline = 0
+    counter = 0
+    
+    for address in addresses:
+        task = asyncio.create_task(get_roteros_upgradable_host(address), name=address)
+        tasks.append(task)
+    
+    async for task in asyncio.as_completed(tasks):
+        counter += 1
+        print_check_upgradable_progress(task.get_name(), counter, len(addresses), len(upgradable_hosts), offline, failed)
+        try:
+            host = await task
+        except TimeoutError:
+            offline += 1
+            continue
+        except Exception as e:
+            failed += 1
+            continue
+        
+        if host is not None:
+            upgradable_hosts.append(host)
+    
+    print('\r\033[K', end='\r')
+    
+    logger.debug(f'get_routeros_upgradable_hosts: Upgradable hosts: {upgradable_hosts}')
+    
+    return upgradable_hosts
 
 async def upgrade_hosts_routeros_start(addresses: list[str]) -> None:
     """
