@@ -229,7 +229,6 @@ async def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
     
     async for task in asyncio.as_completed(tasks):
         counter += 1
-        print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed, address=task.get_name())
         try:
             host = await task
         except TimeoutError:
@@ -241,6 +240,9 @@ async def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
         
         if host is not None:
             upgradable_hosts.append(host)
+            print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed, address=task.get_name(), identity=host.identity)
+        else:
+            print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed, address=task.get_name())
     
     print('\r\033[K', end='\r')
     
