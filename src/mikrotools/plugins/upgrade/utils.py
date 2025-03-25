@@ -41,13 +41,14 @@ def print_check_upgradable_progress(counter, total, outdated, offline, failed=0,
         failed_color = 'green'
     
     print('\r\033[K', end='\r')
-    console.print(f'[grey27]Checked hosts: [sky_blue2]'
-                  f'{f"{identity} " if identity is not None else ""}'
-                  f'{f"[cyan]([yellow]{address}[cyan]) " if address is not None else ""}'
+    console.print(f'[grey27]Checked hosts: '
                   f'[red]\\[{counter}/{total}] '
                   f'[medium_purple1]| [cyan]Upgradable: [medium_purple1]{outdated} '
                   f'[medium_purple1]| [cyan]Offline: [{offline_color}]{offline} '
-                  f'[medium_purple1]| [cyan]Errors: [{failed_color}]{failed}',
+                  f'[medium_purple1]| [cyan]Errors: [{failed_color}]{failed}'
+                  f'{" [medium_purple1]| [cyan]Last checked:" if identity is not None or address is not None else ""}'
+                  f'{f" [sky_blue2]{identity} " if identity is not None else ""}'
+                  f'{f" [cyan]([yellow]{address}[cyan])" if address is not None else ""}',
                   end=''
                   )
 
