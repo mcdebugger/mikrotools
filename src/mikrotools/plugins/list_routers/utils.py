@@ -24,6 +24,7 @@ async def get_host_info(address):
             host.uptime = await device.get('/system resource', 'uptime as-string')
         else:
             host.uptime = await device.get('/system resource', 'uptime')
+
     return host
 
 async def list_hosts(addresses):
@@ -47,29 +48,35 @@ async def list_hosts(addresses):
     tasks = []
     
     for address in addresses:
-        host = MikrotikHost(address=address)
-        tasks.append(get_host_info(address))
+        task = asyncio.create_task(get_host_info(address), name=address)
+        tasks.append(task)
         
     async for task in asyncio.as_completed(tasks):
         error_message = None
         failed = False
         try:
             host = await task
+            hosts.append(host)
         except TimeoutError:
             failed = True
+            host = MikrotikHost(address=task.get_name())
             error_message = 'Connection timeout'
             offline_hosts += 1
         except PermissionDenied:
             failed = True
+            host = MikrotikHost(address=task.get_name())
             error_message = 'Authentication failed'
         except Exception as e:
             failed = True
+            host = MikrotikHost(address=task.get_name())
             error_message = str(e)
-        
+            
         await add_row(table, host, failed, error_message)
-
         console.clear()
         console.print(table)
+
+    console.clear()
+    console.print(table)
         
     console.print(f'[medium_purple1]{"-" * 15}')
     console.print(f'[cornflower_blue]Total hosts: '
