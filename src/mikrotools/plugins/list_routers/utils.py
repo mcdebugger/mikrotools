@@ -47,11 +47,11 @@ async def list_hosts(addresses):
     tasks = []
     
     for address in addresses:
-        error_message = None
         host = MikrotikHost(address=address)
         tasks.append(get_host_info(address))
         
     async for task in asyncio.as_completed(tasks):
+        error_message = None
         failed = False
         try:
             host = await task
