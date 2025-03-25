@@ -216,6 +216,7 @@ async def get_host_if_routeros_upgradable(address) -> MikrotikHost:
 async def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
     tasks = []
     upgradable_hosts = []
+    addresses_with_error = []
     failed = 0
     offline = 0
     counter = 0
@@ -233,8 +234,10 @@ async def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
             host = await task
         except TimeoutError:
             offline += 1
+            addresses_with_error.append((task.get_name(), 'Connection timeout'))
             continue
         except Exception as e:
+            addresses_with_error.append((task.get_name(), e))
             failed += 1
             continue
         
@@ -248,7 +251,7 @@ async def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
     
     logger.debug(f'get_routeros_upgradable_hosts: Upgradable hosts: {upgradable_hosts}')
     
-    return upgradable_hosts
+    return upgradable_hosts, addresses_with_error
 
 async def upgrade_hosts_routeros_start(addresses: list[str]) -> None:
     """
@@ -260,10 +263,10 @@ async def upgrade_hosts_routeros_start(addresses: list[str]) -> None:
     Args:
         addresses (list[str]): A list of IP addresses or hostnames to check.
     """
-    upgradable_hosts = await get_routeros_upgradable_hosts(addresses)
-    await upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts)
+    upgradable_hosts, addresses_with_error = await get_routeros_upgradable_hosts(addresses)
+    await upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts, addresses_with_error)
 
-async def upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts: list[MikrotikHost]) -> None:
+async def upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts: list[MikrotikHost], addresses_with_error: list[tuple[str, str]]) -> None:
     # Checks if there are any hosts to upgrade
     """
     Prompts the user to confirm whether they want to upgrade the specified hosts.
@@ -276,8 +279,14 @@ async def upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts: list[Mikr
         upgradable_hosts (list[MikrotikHost]): A list of objects each containing the
             information of a host to be upgraded.
     """
+    if len(addresses_with_error) > 0:
+        rprint('[orange1]The following hosts failed to check for RouterOS updates:\n')
+        for address, error in addresses_with_error:
+            rprint(f'[light_slate_blue]Host: [bold sky_blue1]{address} [red]{error}')
+        rprint()
+    
     if len(upgradable_hosts) == 0:
-        print(f'{fcolors.bold}{fcolors.green}No hosts to upgrade RouterOS{fcolors.default}')
+        rprint(f'[bold green]No hosts to upgrade RouterOS')
         exit()
     
     # Prints the list of hosts that will be upgraded
