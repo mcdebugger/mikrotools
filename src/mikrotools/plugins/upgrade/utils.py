@@ -267,7 +267,6 @@ async def upgrade_hosts_routeros_start(addresses: list[str]) -> None:
     await upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts, addresses_with_error)
 
 async def upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts: list[MikrotikHost], addresses_with_error: list[tuple[str, str]]) -> None:
-    # Checks if there are any hosts to upgrade
     """
     Prompts the user to confirm whether they want to upgrade the specified hosts.
 
