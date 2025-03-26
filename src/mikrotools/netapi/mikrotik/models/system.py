@@ -3,8 +3,8 @@ from .base import MikrotikBase
 class SystemPackageUpdate(MikrotikBase):
     channel: str
     installed_version: str
-    latest_version: str
-    status: str
+    latest_version: str | None = None
+    status: str | None = None
 
 class SystemRouterboard(MikrotikBase):
     board_name: str | None = None
