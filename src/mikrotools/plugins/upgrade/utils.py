@@ -251,6 +251,7 @@ def upgrade_host_firmware(host):
 async def get_host_if_routeros_upgradable(address) -> MikrotikHost:
     async with await AsyncMikrotikManager.get_connection(address) as device:
         await device.execute_command_raw('/system package update check-for-updates')
+        await asyncio.sleep(3)
         routerboard = await device.get_system_package_update()
         
         if is_upgradable(routerboard.installed_version, routerboard.latest_version):
