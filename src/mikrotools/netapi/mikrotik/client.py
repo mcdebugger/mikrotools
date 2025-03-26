@@ -327,7 +327,9 @@ class AsyncMikrotikSSHClient():
         :raises: ConnectionError if not connected to the host
              RuntimeError if the command execution fails
         """
-        output = await self.execute_command_raw(command).strip().split('\n')
+        response = await self.execute_command_raw(command)
+        
+        output = response.strip().split('\n')
         
         return [line.strip() for line in output if line.strip()]
 
