@@ -7,7 +7,7 @@ class SystemPackageUpdate(MikrotikBase):
     status: str
 
 class SystemRouterboard(MikrotikBase):
-    board_name: str
+    board_name: str | None = None
     current_firmware: str
     factory_firmware: str
     firmware_type: str
