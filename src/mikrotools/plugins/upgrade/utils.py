@@ -91,7 +91,7 @@ def print_upgradable_hosts(upgradable_hosts: list[MikrotikHost], upgrade_type: U
         console.line()
     
     if len(upgradable_hosts) == 0:
-        console.print(f'[bold green]No hosts to upgrade RouterOS')
+        console.print(f'[bold green]No hosts to upgrade{f" {subject}" if subject is not None else ""}.')
         exit()
     
     # Prints the list of hosts that will be upgraded
@@ -118,8 +118,19 @@ def print_upgradable_hosts(upgradable_hosts: list[MikrotikHost], upgrade_type: U
 
 # Upgrade firmware
 
-def get_firmware_upgradable_hosts(addresses):
+async def get_host_if_firmware_upgradable(address) -> MikrotikHost:
+    async with await AsyncMikrotikManager.get_connection(address) as device:
+        routerboard = await device.get_system_routerboard()
+        
+        if is_upgradable(routerboard.current_firmware, routerboard.upgrade_firmware):
+            return await get_mikrotik_host(address)
+        else:
+            return None
+
+async def get_firmware_upgradable_hosts(addresses):
     upgradable_hosts = []
+    tasks = []
+    addresses_with_error = []
     failed = 0
     offline = 0
     counter = 0
@@ -129,34 +140,36 @@ def get_firmware_upgradable_hosts(addresses):
     console.show_cursor(False)
     console.print(f'[grey27]Checking for hosts applicable for firmware upgrade...')
     print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed)
-    
+
     for address in addresses:
+        task = asyncio.create_task(get_host_if_firmware_upgradable(address), name=address)
+        tasks.append(task)
+    
+    async for task in asyncio.as_completed(tasks):
         counter += 1
-        host = MikrotikHost(address=address)
-        print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed, address=address)
-        
         try:
-            with MikrotikManager.get_connection(address) as device:
-                host.identity = device.get_identity()
-                print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed, address=address, identity=host.identity)
-                host.current_firmware_version = device.get_current_firmware_version()
-                host.upgrade_firmware_version = device.get_upgrade_firmware_version()
+            host = await task
         except TimeoutError:
             offline += 1
+            addresses_with_error.append((task.get_name(), 'Connection timeout'))
             continue
         except Exception as e:
+            addresses_with_error.append((task.get_name(), e))
             failed += 1
             continue
         
-        if is_upgradable(host.current_firmware_version, host.upgrade_firmware_version):
+        if host is not None:
             upgradable_hosts.append(host)
+            print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed, address=task.get_name(), identity=host.identity)
+        else:
+            print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed, address=task.get_name())
     
     print('\r\033[K', end='\r')
     console.show_cursor()
     
-    return upgradable_hosts
+    return upgradable_hosts, addresses_with_error
 
-def upgrade_hosts_firmware_start(addresses):
+async def upgrade_hosts_firmware_start(addresses):
     """
     Starts the process of upgrading the firmware of the given hosts.
 
@@ -166,10 +179,10 @@ def upgrade_hosts_firmware_start(addresses):
     Args:
         addresses (list[str]): A list of IP addresses or hostnames to check.
     """
-    upgradable_hosts = get_firmware_upgradable_hosts(addresses)
-    upgrade_hosts_firmware_confirmation_prompt(upgradable_hosts)
+    upgradable_hosts, addresses_with_error = await get_firmware_upgradable_hosts(addresses)
+    await upgrade_hosts_firmware_confirmation_prompt(upgradable_hosts, addresses_with_error)
 
-def upgrade_hosts_firmware_confirmation_prompt(upgradable_hosts):
+async def upgrade_hosts_firmware_confirmation_prompt(upgradable_hosts, addresses_with_error):
     """
     Prompts the user to confirm whether they want to upgrade the specified hosts.
 
@@ -181,12 +194,8 @@ def upgrade_hosts_firmware_confirmation_prompt(upgradable_hosts):
         upgradable_hosts (list[MikrotikHost]): A list of dictionaries each containing the
             information of a host to be upgraded.
     """
-    # Checks if there are any hosts to upgrade
-    if len(upgradable_hosts) == 0:
-        print(f'{fcolors.bold}{fcolors.green}No hosts to upgrade firmware{fcolors.default}')
-        exit()
 
-    print_upgradable_hosts(upgradable_hosts, UpgradeType.FIRMWARE)
+    print_upgradable_hosts(upgradable_hosts, UpgradeType.FIRMWARE, addresses_with_error=addresses_with_error)
 
     # Prompts the user if they want to proceed
     print(f'\n{fcolors.bold}{fcolors.yellow}Are you sure you want to proceed? {fcolors.red}[y/N]{fcolors.default}')
@@ -194,11 +203,11 @@ def upgrade_hosts_firmware_confirmation_prompt(upgradable_hosts):
     
     # Continues or exits the program
     if answer.lower() == 'y':
-        upgrade_hosts_firmware_apply(upgradable_hosts)
+        await upgrade_hosts_firmware_apply(upgradable_hosts)
     else:
         exit()
 
-def upgrade_hosts_firmware_apply(hosts):
+async def upgrade_hosts_firmware_apply(hosts):
     """
     Applies the firmware upgrade to all specified hosts and provides an option
     to reboot them afterward.
@@ -213,47 +222,74 @@ def upgrade_hosts_firmware_apply(hosts):
     Returns:
         None
     """
-
-    counter = 1
+    tasks = []
+    failed_addresses = []
+    counter = 0
+    failed = 0
+    
+    console = Console(highlight=False)
+    console.show_cursor(False)
+    console.print(f'[grey27]Upgrading firmware on hosts...')
+    
     for host in hosts:
-        print_upgrade_progress(host, counter, len(hosts), len(hosts) - counter + 1)
-        upgrade_host_firmware(host)
+        task = asyncio.create_task(upgrade_host_firmware(host))
+        tasks.append(task)
+    
+    async for task in asyncio.as_completed(tasks):
         counter += 1
+        try:
+            host = await task
+        except Exception as e:
+            failed += 1
+            failed_addresses.append((task.get_name(), e))
+            continue
+        
+        print_upgrade_progress(host, counter, len(hosts), len(hosts) - counter)
     
     print(f'\r\033[K', end='\r')
-    print(f'{fcolors.bold}{fcolors.green}All hosts upgraded successfully!{fcolors.default}')
-    print(f'{fcolors.bold}{fcolors.yellow}Would you like to reboot devices now? {fcolors.red}[y/n]{fcolors.default}')
+    console.show_cursor()
+    
+    if failed == 0:
+        console.print(f'[bold green]All hosts upgraded successfully!')
+    else:
+        console.print(f'[bold yellow]Upgraded {len(hosts) - failed} hosts out of {len(hosts)}!')
+        console.print(f'[orange1]Some hosts failed to upgrade with errors:')
+        console.line()
+        for address, error in failed_addresses:
+            console.print(f'[light_slate_blue]Host: [bold sky_blue1]{address} [red]{error}')
+    
+    console.print(f'[bold yellow]Would you like to reboot devices now? [red]\\[y/n]')
     while True:
         answer = input()
         if answer.lower() == 'y':
+            # TODO: Make this to work asynchronously
             reboot_hosts(hosts)
             break
         elif answer.lower() == 'n':
             exit()
         else:
-            print(f'{fcolors.bold}{fcolors.yellow}Invalid input. Please enter "y" or "n".{fcolors.default}')
+            console.print(f'[bold yellow]Invalid input. Please enter "y" or "n".')
 
-def upgrade_host_firmware(host):
+async def upgrade_host_firmware(host):
     """
     Upgrades the firmware of the specified host.
 
     :param host: A MikrotikHost object representing the host to upgrade.
     :return: None
     """
-    try:
-        with MikrotikManager.get_connection(host.address) as device:
-            device.execute_command_raw('/system routerboard upgrade')
-    except Exception as e:
-        pass
+    async with await AsyncMikrotikManager.get_connection(host.address) as device:
+        await device.execute_command_raw('/system routerboard upgrade')
+
+    return host
 
 # Upgrade RouterOS
 
 async def get_host_if_routeros_upgradable(address) -> MikrotikHost:
     async with await AsyncMikrotikManager.get_connection(address) as device:
         await device.execute_command_raw('/system package update check-for-updates')
-        routerboard = await device.get_system_package_update()
+        pkgupdate = await device.get_system_package_update()
         
-        if is_upgradable(routerboard.installed_version, routerboard.latest_version):
+        if is_upgradable(pkgupdate.installed_version, pkgupdate.latest_version):
             return await get_mikrotik_host(address)
         else:
             return None

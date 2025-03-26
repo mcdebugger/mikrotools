@@ -19,7 +19,7 @@ def upgrade(*args, **kwargs):
 @common_options
 def upgrade_firmware(*args, **kwargs):
     hosts = get_hosts()
-    upgrade_hosts_firmware_start(hosts)
+    asyncio.run(upgrade_hosts_firmware_start(hosts))
 
 @click.command(help='Check for routers with outdated firmware')
 @click.argument('min-version')
