@@ -401,7 +401,6 @@ async def upgrade_host_routeros(host: MikrotikHost) -> MikrotikHost:
     async with await AsyncMikrotikManager.get_connection(host.address) as device:
         await device.execute_command_raw('/system package update check-for-updates')
         await device.execute_command_raw('/system package update install')
-        host.current_firmware_version = await device.get_current_firmware_version()
     
     return host
 
