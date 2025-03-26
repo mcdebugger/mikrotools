@@ -78,7 +78,7 @@ def reboot_hosts(hosts):
         for host in failed_hosts:
             console.print(f'[grey78]{host.address}')
         exit()
-    rprint(f'[bold green]All hosts rebooted successfully!')
+    console.print(f'[bold green]All hosts rebooted successfully!')
 
 def reboot_host(host):
     with MikrotikManager.get_connection(host.address) as device:
