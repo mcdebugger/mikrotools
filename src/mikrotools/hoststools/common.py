@@ -37,17 +37,6 @@ async def get_mikrotik_host(address: str) -> MikrotikHost:
         public_address=public_address
     )
 
-def print_reboot_progress(host, counter, total, remaining):
-    # Clears the current line
-    print('\r\033[K', end='')
-    # Prints the reboot progress
-    rprint(f'[grey27]Rebooting [sky_blue2]{host.identity if host.identity is not None else "-"} '
-            f'[blue]([yellow]{host.address}[blue]) '
-            f'[red]\\[{counter}/{total}] '
-            f'[cyan]Remaining: [medium_purple1]{remaining}',
-            end=''
-    )
-
 def reboot_addresses(addresses):
     hosts = []
 
