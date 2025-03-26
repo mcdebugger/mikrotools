@@ -454,6 +454,9 @@ class AsyncMikrotikSSHClient():
     async def get_system_package_update(self) -> SystemPackageUpdate:
         return SystemPackageUpdate(**await self.get_dict('/system package update'))
     
+    async def get_system_routerboard(self) -> SystemRouterboard:
+        return SystemRouterboard(**await self.get_dict('/system routerboard'))
+    
     async def __aenter__(self):
         await self.connect()
         return self
