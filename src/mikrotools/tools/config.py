@@ -56,5 +56,5 @@ def get_hosts():
 
 def read_hosts_from_file(filename):
     with open(filename) as hostsfile:
-        hosts = [host.rstrip() for host in hostsfile]
+        hosts = [host.rstrip() for host in hostsfile if not host.startswith('#')]
         return hosts
