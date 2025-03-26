@@ -15,8 +15,8 @@ from mikrotools.tools.colors import fcolors_256 as fcolors
 logger = logging.getLogger(__name__)
 
 class UpgradeType(Enum):
-    ROUTEROS = auto()
-    FIRMWARE = auto()
+    ROUTEROS = 'RouterOS'
+    FIRMWARE = 'firmware'
 
 def capfirst(s: str) -> str:
     return s[:1].upper() + s[1:]
@@ -78,10 +78,8 @@ def print_outdated_progress(host, counter, total, outdated, offline):
 def print_upgradable_hosts(upgradable_hosts: list[MikrotikHost], upgrade_type: UpgradeType, addresses_with_error: list[tuple[str, str]] | None = None, subject: str = None):
     console = Console(highlight=False)
     
-    if upgrade_type == UpgradeType.ROUTEROS and subject is None:
-        subject = 'RouterOS'
-    elif upgrade_type == UpgradeType.FIRMWARE and subject is None:
-        subject = 'firmware'
+    if isinstance(upgrade_type, UpgradeType) and subject is None:
+        subject = upgrade_type.value
     
     if addresses_with_error is not None and len(addresses_with_error) > 0:
         console.print(f'[orange1]The following hosts failed to check for '
