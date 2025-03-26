@@ -35,23 +35,6 @@ async def print_table(rows):
         await add_row(table, host, failed, error_message)
     console.print(table)
 
-async def get_host_info(address):
-    host = MikrotikHost(address=address)
-    client = await asyncio.wait_for(AsyncMikrotikManager.get_connection(address), timeout=10)
-    async with client as device:
-        host.identity = await device.get_identity()
-        host.public_address = await device.get('/ip cloud', 'public-address')
-        host.installed_routeros_version = await device.get_routeros_installed_version()
-        host.current_firmware_version = await device.get_current_firmware_version()
-        host.model = await device.get('/system routerboard', 'model')
-        host.cpu_load = int(await device.get('/system resource', 'cpu-load'))
-        if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
-            host.uptime = await device.get('/system resource', 'uptime as-string')
-        else:
-            host.uptime = await device.get('/system resource', 'uptime')
-
-    return host
-
 async def list_hosts(addresses, follow: bool = False):
     offline_hosts = 0
     console = Console()
