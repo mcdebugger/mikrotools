@@ -335,11 +335,11 @@ async def upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts: list[Mikr
     answer = console.input(f'\n[bold yellow]Are you sure you want to proceed? [red]\\[y/N]')
     
     if answer.lower() == 'y':
-        upgrade_hosts_routeros_apply(upgradable_hosts)
+        await upgrade_hosts_routeros_apply(upgradable_hosts)
     else:
         exit()
 
-def upgrade_hosts_routeros_apply(hosts: list[MikrotikHost]) -> None:
+async def upgrade_hosts_routeros_apply(hosts: list[MikrotikHost]) -> None:
     """
     Upgrades RouterOS version on all specified hosts.
 
@@ -353,16 +353,39 @@ def upgrade_hosts_routeros_apply(hosts: list[MikrotikHost]) -> None:
     Returns:
         None
     """
-    counter = 1
+    tasks = []
+    counter = 0
+    failed = 0
+    
+    console = Console(highlight=False)
+    console.show_cursor(False)
+    
     for host in hosts:
-        print_upgrade_progress(host, counter, len(hosts), len(hosts) - counter + 1)
-        upgrade_host_routeros(host)
+        task = asyncio.create_task(upgrade_host_routeros(host))
+        tasks.append(task)
+    
+    async for task in asyncio.as_completed(tasks):
         counter += 1
+        try:
+            host = await task
+        except Exception as e:
+            failed += 1
+            console.print(f'[bold red]Failed to upgrade host: [light_slate_blue]{host.address}: [red]{e}')
+            continue
+        
+        print_upgrade_progress(host, counter, len(hosts), len(hosts) - counter)
     
     print(f'\r\033[K', end='\r')
-    print(f'{fcolors.bold}{fcolors.green}All hosts upgraded successfully!{fcolors.default}')
+    
+    if failed == 0:
+        console.print(f'[bold green]All hosts upgraded successfully!')
+    else:
+        console.print(f'[bold yellow]Upgraded {len(hosts) - failed} hosts out of {len(hosts)}!\n')
+        console.print(f'[bold red]Failed to upgrade {failed} hosts out of {len(hosts)}!')
+    
+    console.show_cursor()
 
-def upgrade_host_routeros(host: MikrotikHost) -> None:
+async def upgrade_host_routeros(host: MikrotikHost) -> MikrotikHost:
     """
     Upgrades the RouterOS version on the specified host.
 
@@ -374,14 +397,14 @@ def upgrade_host_routeros(host: MikrotikHost) -> None:
                              The host's address is used to establish the connection.
 
     Returns:
-        None
+        MikrotikHost: The updated MikrotikHost object.
     """
-    try:
-        with MikrotikManager.get_connection(host.address) as device:
-            device.execute_command_raw('/system package update check-for-updates')
-            device.execute_command_raw('/system package update install')
-    except Exception as e:
-        pass
+    async with await AsyncMikrotikManager.get_connection(host.address) as device:
+        await device.execute_command_raw('/system package update check-for-updates')
+        await device.execute_command_raw('/system package update install')
+        host.current_firmware_version = await device.get_current_firmware_version()
+    
+    return host
 
 def get_outdated_hosts(hosts, min_version, filtered_version):
 
