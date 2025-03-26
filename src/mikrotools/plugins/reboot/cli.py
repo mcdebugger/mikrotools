@@ -1,3 +1,4 @@
+import asyncio
 import click
 
 from mikrotools.cli.options import common_options
@@ -10,7 +11,7 @@ from mikrotools.tools.config import get_hosts
 @common_options
 def reboot(*args, **kwargs):
     addresses = get_hosts()
-    reboot_addresses(addresses)
+    asyncio.run(reboot_addresses(addresses))
 
 def register(cli_group):
     cli_group.add_command(reboot)

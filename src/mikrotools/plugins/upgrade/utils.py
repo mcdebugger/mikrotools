@@ -260,8 +260,7 @@ async def upgrade_hosts_firmware_apply(hosts):
     while True:
         answer = input()
         if answer.lower() == 'y':
-            # TODO: Make this to work asynchronously
-            reboot_hosts(hosts)
+            await reboot_hosts(hosts)
             break
         elif answer.lower() == 'n':
             exit()

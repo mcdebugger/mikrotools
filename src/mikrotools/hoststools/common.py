@@ -37,7 +37,7 @@ async def get_mikrotik_host(address: str) -> MikrotikHost:
         public_address=public_address
     )
 
-def reboot_addresses(addresses):
+async def reboot_addresses(addresses):
     hosts = []
 
     print(f'The following hosts will be rebooted:')
@@ -51,35 +51,45 @@ def reboot_addresses(addresses):
         exit()
     else:
         [hosts.append(MikrotikHost(address=address)) for address in addresses]
-        reboot_hosts(hosts)
+        await reboot_hosts(hosts)
 
-def reboot_hosts(hosts):
+async def reboot_hosts(hosts):
     failed = 0
-    failed_hosts = []
+    failed_addresses = []
+    tasks = []
     counter = 0
     console = Console(highlight=False)
     
+    for host in hosts:
+        task = asyncio.create_task(reboot_host(host), name=host.address)
+        tasks.append(task)
+    
     with Progress(OperationType.REBOOT) as progress:
         progress.update(counter=counter, total=len(hosts))
-        for host in hosts:
+        async for task in asyncio.as_completed(tasks):
+            counter += 1
             try:
-                reboot_host(host)
+                host = await task
+            except TimeoutError:
+                failed += 1
+                failed_addresses.append((task.get_name(), 'Connection timeout'))
             except Exception as e:
                 failed += 1
-                failed_hosts.append(host)
+                failed_addresses.append((task.get_name(), str(e)))
             
-            counter += 1
-            progress.update(host=host, counter=counter, total=len(hosts))
+            progress.update(counter=counter, total=len(hosts), host=host)
     
     console.line()
     if failed > 0:
         console.print(f'[bold orange1]Rebooted {len(hosts) - failed} hosts out of {len(hosts)}!\n')
         console.print(f'[bold red3]The following hosts failed to reboot:')
-        for host in failed_hosts:
-            console.print(f'[grey78]{host.address}')
+        for address, error in failed_addresses:
+            console.print(f'[red]{address}: [yellow]{error}')
         exit()
     console.print(f'[bold green]All hosts rebooted successfully!')
 
-def reboot_host(host):
-    with MikrotikManager.get_connection(host.address) as device:
-        device.execute_command('/system reboot')
+async def reboot_host(host):
+    async with await AsyncMikrotikManager.get_connection(host.address) as device:
+        await device.execute_command('/system reboot')
+    
+    return host
