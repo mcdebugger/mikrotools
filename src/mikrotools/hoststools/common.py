@@ -12,13 +12,10 @@ from mikrotools.netapi import MikrotikManager, AsyncMikrotikManager
 async def get_mikrotik_host(address: str) -> MikrotikHost:
     async with await AsyncMikrotikManager.get_connection(address) as device:
         identity = await device.get_identity()
-        installed_routeros_version = await device.get_routeros_installed_version()
-        latest_routeros_version = await device.get_routeros_latest_version()
-        current_firmware_version = await device.get_current_firmware_version()
-        upgrade_firmware_verion = await device.get_upgrade_firmware_version()
+        pkgupdate = await device.get_system_package_update()
+        routerboard = await device.get_system_routerboard()
         cpu_load = int(await device.get('/system resource', 'cpu-load'))
-        model = await device.get('/system routerboard', 'model')
-        if version.parse(installed_routeros_version) >= version.parse('7.0'):
+        if version.parse(pkgupdate.installed_version) >= version.parse('7.0'):
             uptime = await device.get('/system resource', 'uptime as-string')
         else:
             uptime = await device.get('/system resource', 'uptime')
@@ -27,12 +24,12 @@ async def get_mikrotik_host(address: str) -> MikrotikHost:
     return MikrotikHost(
         address=address,
         identity=identity,
-        installed_routeros_version=installed_routeros_version,
-        latest_routeros_version=latest_routeros_version,
-        current_firmware_version=current_firmware_version,
-        upgrade_firmware_version=upgrade_firmware_verion,
+        installed_routeros_version=pkgupdate.installed_version,
+        latest_routeros_version=pkgupdate.latest_version,
+        current_firmware_version=routerboard.current_firmware,
+        upgrade_firmware_version=routerboard.upgrade_firmware,
         cpu_load=cpu_load,
-        model=model,
+        model=routerboard.model,
         uptime=uptime,
         public_address=public_address
     )

@@ -3,13 +3,13 @@ import asyncio
 from asyncssh.misc import PermissionDenied
 from ipaddress import IPv4Address
 from packaging import version
-from paramiko import AuthenticationException
 from rich.box import SIMPLE
 from rich.console import Console
 from rich.table import Table
 
+from mikrotools.hoststools.common import get_mikrotik_host
 from mikrotools.hoststools.models import MikrotikHost
-from mikrotools.netapi import MikrotikManager, AsyncMikrotikManager
+from mikrotools.netapi import AsyncMikrotikManager
 
 async def create_table():
     table = Table(title="[green]List of hosts", show_header=True, header_style="bold grey78", box=SIMPLE)
@@ -64,7 +64,7 @@ async def list_hosts(addresses, follow: bool = False):
     rows = {}
     
     for address in addresses:
-        task = asyncio.create_task(get_host_info(address), name=address)
+        task = asyncio.create_task(get_mikrotik_host(address), name=address)
         tasks.append(task)
         
     async for task in asyncio.as_completed(tasks):
