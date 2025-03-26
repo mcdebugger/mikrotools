@@ -71,8 +71,7 @@ def reboot_hosts(hosts):
             counter += 1
             progress.update(host=host, counter=counter, total=len(hosts))
     
-    print(f'\r\033[K', end='\r')
-    print('')
+    console.line()
     if failed > 0:
         console.print(f'[bold orange1]Rebooted {len(hosts) - failed} hosts out of {len(hosts)}!\n')
         console.print(f'[bold red3]The following hosts failed to reboot:')
