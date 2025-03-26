@@ -5,7 +5,10 @@ from rich import print as rprint
 from rich.console import Console
 from rich.prompt import Confirm
 
+from mikrotools.cli.progress import Progress
+
 from .models import MikrotikHost
+from .models.operations import OperationType
 
 from mikrotools.netapi import MikrotikManager, AsyncMikrotikManager
 
@@ -33,7 +36,7 @@ async def get_mikrotik_host(address: str) -> MikrotikHost:
         uptime=uptime,
         public_address=public_address
     )
-                
+
 def print_reboot_progress(host, counter, total, remaining):
     # Clears the current line
     print('\r\033[K', end='')
@@ -64,17 +67,20 @@ def reboot_addresses(addresses):
 def reboot_hosts(hosts):
     failed = 0
     failed_hosts = []
-    counter = 1
+    counter = 0
     console = Console(highlight=False)
     
-    for host in hosts:
-        print_reboot_progress(host, counter, len(hosts), len(hosts) - counter + 1)
-        try:
-            reboot_host(host)
-        except Exception as e:
-            failed += 1
-            failed_hosts.append(host)
-        counter += 1
+    with Progress(OperationType.REBOOT) as progress:
+        progress.update(counter=counter, total=len(hosts))
+        for host in hosts:
+            try:
+                reboot_host(host)
+            except Exception as e:
+                failed += 1
+                failed_hosts.append(host)
+            
+            counter += 1
+            progress.update(host=host, counter=counter, total=len(hosts))
     
     print(f'\r\033[K', end='\r')
     print('')
