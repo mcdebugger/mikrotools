@@ -1,6 +1,7 @@
 import asyncio
 import logging
 
+from enum import Enum, auto
 from packaging import version
 from rich.console import Console
 from rich import print as rprint
@@ -12,6 +13,13 @@ from mikrotools.netapi import MikrotikManager, AsyncMikrotikManager
 from mikrotools.tools.colors import fcolors_256 as fcolors
 
 logger = logging.getLogger(__name__)
+
+class UpgradeType(Enum):
+    ROUTEROS = auto()
+    FIRMWARE = auto()
+
+def capfirst(s: str) -> str:
+    return s[:1].upper() + s[1:]
 
 def is_upgradable(current_version, upgrade_version):
     """
@@ -67,10 +75,15 @@ def print_outdated_progress(host, counter, total, outdated, offline):
             f'{fcolors.cyan}Offline: {fcolors.red}{offline}{fcolors.default}',
             end='')
 
-def print_upgradable_hosts(upgradable_hosts: list[MikrotikHost], addresses_with_error: list[tuple[str, str]], subject: str = None):
+def print_upgradable_hosts(upgradable_hosts: list[MikrotikHost], upgrade_type: UpgradeType, addresses_with_error: list[tuple[str, str]] | None = None, subject: str = None):
     console = Console(highlight=False)
     
-    if len(addresses_with_error) > 0:
+    if upgrade_type == UpgradeType.ROUTEROS and subject is None:
+        subject = 'RouterOS'
+    elif upgrade_type == UpgradeType.FIRMWARE and subject is None:
+        subject = 'firmware'
+    
+    if addresses_with_error is not None and len(addresses_with_error) > 0:
         console.print(f'[orange1]The following hosts failed to check for '
                       f'{f"{subject} " if subject is not None else ""}updates:\n')
         for address, error in addresses_with_error:
@@ -85,15 +98,22 @@ def print_upgradable_hosts(upgradable_hosts: list[MikrotikHost], addresses_with_
     console.print(f'[bold yellow]Upgradable hosts: [red]{len(upgradable_hosts)}')
     console.line()
     console.print(
-        f'{f"{subject} on the" if subject is not None else "The"}'
+        f'{f"{capfirst(subject)} on the" if subject is not None else "The"}'
         f' following list of devices will be upgraded:\n'
     )
     
     for host in upgradable_hosts:
+        if upgrade_type == UpgradeType.ROUTEROS:
+            current_version = host.installed_routeros_version
+            new_version = host.latest_routeros_version
+        elif upgrade_type == UpgradeType.FIRMWARE:
+            current_version = host.current_firmware_version
+            new_version = host.upgrade_firmware_version
+        
         console.print(
             f'[sky_blue2]Host: [/][bold green]{host.identity}[/]'
             f' ([medium_purple1]{host.address}[/]) '
-            f'[blue]\\[[red]{host.installed_routeros_version} [hot_pink]> [green]{host.latest_routeros_version}[blue]]'
+            f'[blue]\\[[red]{current_version} [hot_pink]> [green]{new_version}[blue]]'
         )
 
 # Upgrade firmware
@@ -165,16 +185,8 @@ def upgrade_hosts_firmware_confirmation_prompt(upgradable_hosts):
     if len(upgradable_hosts) == 0:
         print(f'{fcolors.bold}{fcolors.green}No hosts to upgrade firmware{fcolors.default}')
         exit()
-    
-    # Prints the list of hosts that will be upgraded
-    print(f'{fcolors.bold}{fcolors.yellow}Upgradable hosts: {fcolors.red}{len(upgradable_hosts)}{fcolors.default}')
-    print(f'\nThe following list of devices will be upgraded:\n')
-    
-    for host in upgradable_hosts:
-        print(f'{fcolors.lightblue}Host: {fcolors.bold}{fcolors.green}{host.identity}'
-              f'{fcolors.default} ({fcolors.lightpurple}{host.address}{fcolors.default})'
-              f' {fcolors.blue}[{fcolors.red}{host.current_firmware_version} > {fcolors.green}{host.upgrade_firmware_version}{fcolors.blue}]'
-              f'{fcolors.default}')
+
+    print_upgradable_hosts(upgradable_hosts, UpgradeType.FIRMWARE)
 
     # Prompts the user if they want to proceed
     print(f'\n{fcolors.bold}{fcolors.yellow}Are you sure you want to proceed? {fcolors.red}[y/N]{fcolors.default}')
@@ -317,7 +329,7 @@ async def upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts: list[Mikr
     """
     console = Console(highlight=False)
     
-    print_upgradable_hosts(upgradable_hosts, addresses_with_error, subject='RouterOS')
+    print_upgradable_hosts(upgradable_hosts, UpgradeType.ROUTEROS, addresses_with_error=addresses_with_error)
     
     answer = console.input(f'\n[bold yellow]Are you sure you want to proceed? [red]\\[y/N]')
     
