@@ -52,7 +52,7 @@ async def get_host_info(address):
 
     return host
 
-async def list_hosts(addresses):
+async def list_hosts(addresses, follow: bool = False):
     offline_hosts = 0
     console = Console()
     table = await create_table()
