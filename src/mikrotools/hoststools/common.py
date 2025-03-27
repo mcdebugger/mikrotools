@@ -10,7 +10,7 @@ from mikrotools.cli.progress import Progress
 from .models import MikrotikHost
 from .models.operations import OperationType
 
-from mikrotools.netapi import MikrotikManager, AsyncMikrotikManager
+from mikrotools.netapi import AsyncMikrotikManager
 
 async def get_mikrotik_host(address: str) -> MikrotikHost:
     async with await AsyncMikrotikManager.get_connection(address) as device:
