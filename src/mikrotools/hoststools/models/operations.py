@@ -8,4 +8,6 @@ class OperationTemplate:
     text: str | None = None
 
 class OperationType(Enum):
+    CHECKUPGRADABLE = OperationTemplate(name='upgradable hosts check', text='Checking for updates...')
     REBOOT = OperationTemplate(name='reboot')
+    UPGRADE = OperationTemplate(name='upgrade')
