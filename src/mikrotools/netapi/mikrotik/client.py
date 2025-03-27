@@ -10,7 +10,7 @@ from .models import *
 logger = logging.getLogger(__name__)
 
 class MikrotikSSHClient():
-    def __init__(self, host: str, username: str, password: str = None, keyfile: str = None, port: int = 22):
+    def __init__(self, host: str, username: str, password: str | None = None, keyfile: str | None = None, port: int = 22):
         self._host = host
         self._port = port
         self._username = username
@@ -19,6 +19,10 @@ class MikrotikSSHClient():
         self._ssh = paramiko.SSHClient()
         self._ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         self._connected = False
+    
+    @property
+    def is_connected(self) -> bool:
+        return self._connected
     
     def connect(self) -> None:
         disabled_algorithms = {'pubkeys': ['rsa-sha2-256', 'rsa-sha2-512']}

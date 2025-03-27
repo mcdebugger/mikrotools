@@ -1,6 +1,6 @@
 import threading
 
-from contextlib import contextmanager, asynccontextmanager
+from contextlib import contextmanager, suppress
 from functools import lru_cache
 from paramiko.ssh_exception import SSHException
 from typing import Generator
@@ -11,7 +11,7 @@ from .client import MikrotikSSHClient, AsyncMikrotikSSHClient
 
 class MikrotikManager:
     _config = None
-    _connections = {}
+    _connections: dict[str, MikrotikSSHClient] = {}
     _lock = threading.Lock()
     
     @classmethod
@@ -26,7 +26,7 @@ class MikrotikManager:
         with cls._lock:
             if host in cls._connections:
                 client = cls._connections[host]
-                if client and client.is_connected():
+                if client and client.is_connected:
                     return client
                 else:
                     del cls._connections[host]
@@ -37,11 +37,7 @@ class MikrotikManager:
             username = cls._config.ssh.username
             port = cls._config.ssh.port
             password = cls._config.ssh.password
-            if cls._config.ssh.keyfile:
-                keyfile = cls._config.ssh.keyfile
-            else:
-                keyfile = None
-            
+            keyfile = cls._config.ssh.keyfile or None
             try:
                 client = MikrotikSSHClient(
                     host=host,
@@ -60,10 +56,8 @@ class MikrotikManager:
     def close_all(cls) -> None:
         with cls._lock:
             for host, client in list(cls._connections.items()):
-                try:
+                with suppress(Exception):
                     client.disconnect()
-                except Exception as e:
-                    pass
                 del cls._connections[host]
             cls.get_connection.cache_clear()
     
@@ -88,7 +82,7 @@ class MikrotikManager:
 
 class AsyncMikrotikManager():
     _config = None
-    _connections = {}
+    _connections: dict[str, AsyncMikrotikSSHClient] = {}
     _lock = threading.Lock()
 
     @classmethod
@@ -112,11 +106,7 @@ class AsyncMikrotikManager():
         username = cls._config.ssh.username
         port = cls._config.ssh.port
         password = cls._config.ssh.password
-        if cls._config.ssh.keyfile:
-            keyfile = cls._config.ssh.keyfile
-        else:
-            keyfile = None
-        
+        keyfile = cls._config.ssh.keyfile or None
         try:
             client = AsyncMikrotikSSHClient(
                 host=host,
@@ -134,9 +124,7 @@ class AsyncMikrotikManager():
     @classmethod
     async def close_all(cls) -> None:
         for host, client in list(cls._connections.items()):
-            try:
+            with suppress(Exception):
                 await client.disconnect()
-            except Exception as e:
-                pass
             del cls._connections[host]
         await cls.get_connection.cache_clear()
