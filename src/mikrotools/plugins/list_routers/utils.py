@@ -82,7 +82,7 @@ async def list_hosts(addresses, follow: bool = False):
         task = asyncio.create_task(get_mikrotik_host(address), name=address)
         tasks.append(task)
 
-    with Live(layout, console=console, refresh_per_second=10) as live:
+    with Live(layout, console=console, screen=True, refresh_per_second=10) as live:
         async for task in asyncio.as_completed(tasks):
             error_message = None
             failed = False
