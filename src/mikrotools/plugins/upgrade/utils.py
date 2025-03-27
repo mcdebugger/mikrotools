@@ -34,39 +34,6 @@ def is_upgradable(current_version, upgrade_version):
     if current_version and upgrade_version:
         return version.parse(current_version) < version.parse(upgrade_version)
 
-def print_check_upgradable_progress(counter, total, outdated, offline, failed=0, address: str = None, identity: str = None):
-    console = Console()
-    
-    if offline > 0:
-        offline_color = 'red'
-    else:
-        offline_color = 'green'
-    
-    if failed > 0:
-        failed_color = 'red'
-    else:
-        failed_color = 'green'
-    
-    print('\r\033[K', end='\r')
-    console.print(f'[grey27]Checked hosts: '
-                  f'[red]\\[{counter}/{total}] '
-                  f'[medium_purple1]| [cyan]Upgradable: [medium_purple1]{outdated} '
-                  f'[medium_purple1]| [cyan]Offline: [{offline_color}]{offline} '
-                  f'[medium_purple1]| [cyan]Errors: [{failed_color}]{failed}'
-                  f'{" [medium_purple1]| [cyan]Last checked:" if identity is not None or address is not None else ""}'
-                  f'{f" [sky_blue2]{identity}" if identity is not None else ""}'
-                  f'{f" [cyan]([yellow]{address}[cyan])" if address is not None else ""}',
-                  end=''
-                  )
-
-def print_upgrade_progress(host, counter, total, remaining):
-        print(f'\r{fcolors.darkgray}Upgrading {fcolors.lightblue}{host.identity} '
-              f'{fcolors.blue}({fcolors.yellow}{host.address}{fcolors.blue}) '
-              f'{fcolors.red}[{counter}/{total}] '
-              f'{fcolors.cyan}Remaining: {fcolors.lightpurple}{remaining}{fcolors.default}'
-              f'\033[K',
-              end='')
-
 def print_outdated_progress(host, counter, total, outdated, offline):
         print(f'\r{fcolors.darkgray}Checking host {fcolors.yellow}{host} '
             f'{fcolors.red}[{counter}/{total}] '
