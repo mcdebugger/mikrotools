@@ -69,6 +69,7 @@ async def list_hosts(addresses, follow: bool = False):
     rows = {}
     offline_hosts = 0
     
+    console = Console()
     layout = Layout()
     table = create_table()
     footer = get_footer(rows=rows, offline_hosts=offline_hosts)
@@ -80,42 +81,39 @@ async def list_hosts(addresses, follow: bool = False):
     for address in addresses:
         task = asyncio.create_task(get_mikrotik_host(address), name=address)
         tasks.append(task)
-    
-    with Console() as console:
-        console.height = console.height - 1
-        with Live(layout, console=console) as live:
-            async for task in asyncio.as_completed(tasks):
-                error_message = None
-                failed = False
-                try:
-                    host = await task
-                    hosts.append(host)
-                except TimeoutError:
-                    failed = True
-                    host = MikrotikHost(address=task.get_name())
-                    error_message = 'Connection timeout'
-                    offline_hosts += 1
-                except PermissionDenied:
-                    failed = True
-                    host = MikrotikHost(address=task.get_name())
-                    error_message = 'Authentication failed'
-                except Exception as e:
-                    failed = True
-                    host = MikrotikHost(address=task.get_name())
-                    error_message = str(e)
-                
-                rows[task.get_name()] = (host, failed, error_message)
-                
-                table = generate_table(table, rows)
-                footer = get_footer(rows=rows, offline_hosts=offline_hosts)
-                layout['table'].update(table)
-                layout['footer'].update(footer)
+
+    with Live(layout, console=console) as live:
+        async for task in asyncio.as_completed(tasks):
+            error_message = None
+            failed = False
+            try:
+                host = await task
+                hosts.append(host)
+            except TimeoutError:
+                failed = True
+                host = MikrotikHost(address=task.get_name())
+                error_message = 'Connection timeout'
+                offline_hosts += 1
+            except PermissionDenied:
+                failed = True
+                host = MikrotikHost(address=task.get_name())
+                error_message = 'Authentication failed'
+            except Exception as e:
+                failed = True
+                host = MikrotikHost(address=task.get_name())
+                error_message = str(e)
+            
+            rows[task.get_name()] = (host, failed, error_message)
+            
+            table = generate_table(table, rows)
+            footer = get_footer(rows=rows, offline_hosts=offline_hosts)
+            layout['table'].update(table)
+            layout['footer'].update(footer)
     
     # Print the final table
     console.clear()
     console.print(table)
     console.print(footer)
-
 
 def add_row(table: Table, host: MikrotikHost, failed: bool = False, error_message: str = None):
     if host is not None:
