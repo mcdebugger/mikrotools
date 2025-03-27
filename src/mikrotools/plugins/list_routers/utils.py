@@ -110,6 +110,11 @@ async def list_hosts(addresses, follow: bool = False):
                 footer = get_footer(rows=rows, offline_hosts=offline_hosts)
                 layout['table'].update(table)
                 layout['footer'].update(footer)
+    
+    # Print the final table
+    console.clear()
+    console.print(table)
+    console.print(footer)
 
 
 def add_row(table: Table, host: MikrotikHost, failed: bool = False, error_message: str = None):
