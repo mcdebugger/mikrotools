@@ -306,7 +306,7 @@ class AsyncMikrotikSSHClient():
         logger.debug(f'Executing command: {command}')
         
         try:
-            response = await self._conn.run(command)
+            response = await self._conn.run(command, timeout=20)
             result = response.stdout
             error = response.stderr.strip()
             
