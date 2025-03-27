@@ -6,20 +6,20 @@ class Base (BaseModel):
     pass
 
 class Inventory(Base):
-    hostsFile: str = None
+    hostsFile: str | None = None
 
 class JumpHost(Base):
-    address: str = None
+    address: str | None = None
     port: int = 22
-    username: str = None
-    password: str = None
-    keyfile: str = None
+    username: str | None = None
+    password: str | None = None
+    keyfile: str | None = None
 
 class SSHConfig(Base):
     port: int = 22
-    username: str = None
-    password: str = None
-    keyfile: str = None
+    username: str | None = None
+    password: str | None = None
+    keyfile: str | None = None
     jump: bool = False
     jumphost: JumpHost = JumpHost()
 
