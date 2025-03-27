@@ -90,6 +90,6 @@ async def reboot_hosts(hosts):
 
 async def reboot_host(host):
     async with await AsyncMikrotikManager.get_connection(host.address) as device:
-        await device.execute_command('/system reboot')
+        await device.execute_command_raw('/system reboot')
     
     return host
