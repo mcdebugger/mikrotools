@@ -76,8 +76,9 @@ class MikrotikManager:
                     del cls._connections[host]
                 cls.get_connection.cache_clear()
             client.disconnect()
-            raise
+            raise e
         finally:
+            # The client is returned to the connection pool and doesn't need to be explicitly closed here.
             pass
 
 class AsyncMikrotikManager():
