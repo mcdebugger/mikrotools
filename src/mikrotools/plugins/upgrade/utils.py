@@ -1,22 +1,21 @@
 import asyncio
 import logging
 
-from enum import Enum, auto
 from packaging import version
 from rich.console import Console
-from rich import print as rprint
 
 from mikrotools.hoststools.common import get_mikrotik_host, reboot_hosts
 from mikrotools.hoststools.models import MikrotikHost
 
+from mikrotools.cli.progress import Progress
+from mikrotools.hoststools.models import OperationType
 from mikrotools.netapi import MikrotikManager, AsyncMikrotikManager
 from mikrotools.tools.colors import fcolors_256 as fcolors
 
-logger = logging.getLogger(__name__)
+from .progress import CheckUpgradableProgress
+from .types import UpgradeType
 
-class UpgradeType(Enum):
-    ROUTEROS = 'RouterOS'
-    FIRMWARE = 'firmware'
+logger = logging.getLogger(__name__)
 
 def capfirst(s: str) -> str:
     return s[:1].upper() + s[1:]
@@ -137,32 +136,32 @@ async def get_firmware_upgradable_hosts(addresses):
     
     console.show_cursor(False)
     console.print(f'[grey27]Checking for hosts applicable for firmware upgrade...')
-    print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed)
 
-    for address in addresses:
-        task = asyncio.create_task(get_host_if_firmware_upgradable(address), name=address)
-        tasks.append(task)
-    
-    async for task in asyncio.as_completed(tasks):
-        counter += 1
-        try:
-            host = await task
-        except TimeoutError:
-            offline += 1
-            addresses_with_error.append((task.get_name(), 'Connection timeout'))
-            continue
-        except Exception as e:
-            addresses_with_error.append((task.get_name(), e))
-            failed += 1
-            continue
+    with CheckUpgradableProgress(UpgradeType.FIRMWARE) as progress:
+        progress.update(counter, len(addresses), len(upgradable_hosts), offline, failed)
+        for address in addresses:
+            task = asyncio.create_task(get_host_if_firmware_upgradable(address), name=address)
+            tasks.append(task)
         
-        if host is not None:
-            upgradable_hosts.append(host)
-            print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed, address=task.get_name(), identity=host.identity)
-        else:
-            print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed, address=task.get_name())
+        async for task in asyncio.as_completed(tasks):
+            counter += 1
+            try:
+                host = await task
+            except TimeoutError:
+                offline += 1
+                addresses_with_error.append((task.get_name(), 'Connection timeout'))
+                continue
+            except Exception as e:
+                addresses_with_error.append((task.get_name(), e))
+                failed += 1
+                continue
+            
+            if host is not None:
+                upgradable_hosts.append(host)
+                progress.update(counter, len(addresses), len(upgradable_hosts), offline, failed, address=task.get_name(), identity=host.identity)
+            else:
+                progress.update(counter, len(addresses), len(upgradable_hosts), offline, failed, address=task.get_name())
     
-    print('\r\033[K', end='\r')
     console.show_cursor()
     
     return upgradable_hosts, addresses_with_error
@@ -230,21 +229,25 @@ async def upgrade_hosts_firmware_apply(hosts):
     console.print(f'[grey27]Upgrading firmware on hosts...')
     
     for host in hosts:
-        task = asyncio.create_task(upgrade_host_firmware(host))
+        task = asyncio.create_task(upgrade_host_firmware(host), name=host.address)
         tasks.append(task)
     
-    async for task in asyncio.as_completed(tasks):
-        counter += 1
-        try:
-            host = await task
-        except Exception as e:
-            failed += 1
-            failed_addresses.append((task.get_name(), e))
-            continue
-        
-        print_upgrade_progress(host, counter, len(hosts), len(hosts) - counter)
+    with Progress(OperationType.UPGRADE) as progress:
+        progress.update(counter, len(hosts))
+        async for task in asyncio.as_completed(tasks):
+            counter += 1
+            try:
+                host = await task
+            except Exception as e:
+                failed += 1
+                failed_addresses.append((task.get_name(), e))
+                continue
+            
+            if host is not None:
+                progress.update(counter, len(hosts), host=host)
+            else:
+                progress.update(counter, len(hosts), address=task.get_name())
     
-    print(f'\r\033[K', end='\r')
     console.show_cursor()
     
     if failed == 0:
@@ -303,32 +306,32 @@ async def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
     
     console.show_cursor(False)
     console.print(f'[grey27]Checking for hosts applicable for RouterOS upgrade...')
-    print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed)
     
     for address in addresses:
         task = asyncio.create_task(get_host_if_routeros_upgradable(address), name=address)
         tasks.append(task)
     
-    async for task in asyncio.as_completed(tasks):
-        counter += 1
-        try:
-            host = await task
-        except TimeoutError:
-            offline += 1
-            addresses_with_error.append((task.get_name(), 'Connection timeout'))
-            continue
-        except Exception as e:
-            addresses_with_error.append((task.get_name(), e))
-            failed += 1
-            continue
-        
-        if host is not None:
-            upgradable_hosts.append(host)
-            print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed, address=task.get_name(), identity=host.identity)
-        else:
-            print_check_upgradable_progress(counter, len(addresses), len(upgradable_hosts), offline, failed, address=task.get_name())
+    with CheckUpgradableProgress(UpgradeType.ROUTEROS) as progress:
+        progress.update(counter, len(addresses), len(upgradable_hosts), offline, failed)
+        async for task in asyncio.as_completed(tasks):
+            counter += 1
+            try:
+                host = await task
+            except TimeoutError:
+                offline += 1
+                addresses_with_error.append((task.get_name(), 'Connection timeout'))
+                continue
+            except Exception as e:
+                addresses_with_error.append((task.get_name(), e))
+                failed += 1
+                continue
+            
+            if host is not None:
+                upgradable_hosts.append(host)
+                progress.update(counter, len(addresses), len(upgradable_hosts), offline, failed, address=task.get_name(), identity=host.identity)
+            else:
+                progress.update(counter, len(addresses), len(upgradable_hosts), offline, failed, address=task.get_name())
     
-    print('\r\033[K', end='\r')
     console.show_cursor()
     
     logger.debug(f'get_routeros_upgradable_hosts: Upgradable hosts: {upgradable_hosts}')
@@ -386,6 +389,7 @@ async def upgrade_hosts_routeros_apply(hosts: list[MikrotikHost]) -> None:
         None
     """
     tasks = []
+    failed_addresses = []
     counter = 0
     failed = 0
     
@@ -396,24 +400,30 @@ async def upgrade_hosts_routeros_apply(hosts: list[MikrotikHost]) -> None:
         task = asyncio.create_task(upgrade_host_routeros(host))
         tasks.append(task)
     
-    async for task in asyncio.as_completed(tasks):
-        counter += 1
-        try:
-            host = await task
-        except Exception as e:
-            failed += 1
-            console.print(f'[bold red]Failed to upgrade host: [light_slate_blue]{host.address}: [red]{e}')
-            continue
-        
-        print_upgrade_progress(host, counter, len(hosts), len(hosts) - counter)
-    
-    print(f'\r\033[K', end='\r')
+    with Progress(OperationType.UPGRADE) as progress:
+        progress.update(counter, len(hosts))
+        async for task in asyncio.as_completed(tasks):
+            counter += 1
+            try:
+                host = await task
+            except Exception as e:
+                failed += 1
+                failed_addresses.append((task.get_name(), e))
+                continue
+            
+            if host is not None:
+                progress.update(counter, len(hosts), host)
+            else:
+                progress.update(counter, len(hosts), task.get_name())
     
     if failed == 0:
         console.print(f'[bold green]All hosts upgraded successfully!')
     else:
-        console.print(f'[bold yellow]Upgraded {len(hosts) - failed} hosts out of {len(hosts)}!\n')
-        console.print(f'[bold red]Failed to upgrade {failed} hosts out of {len(hosts)}!')
+        console.print(f'[bold yellow]Upgraded {len(hosts) - failed} hosts out of {len(hosts)}!')
+        console.print(f'[orange1]Some hosts failed to upgrade with errors:')
+        console.line()
+        for address, error in failed_addresses:
+            console.print(f'[light_slate_blue]Host: [bold sky_blue1]{address} [red]{error}')
     
     console.show_cursor()
 
