@@ -1,21 +1,32 @@
 from rich.console import Console
 from rich.live import Live
+from rich.status import Status
 
 from mikrotools.hoststools.models import MikrotikHost, OperationType
 
 class Progress:
-    def __init__(self, optype: OperationType) -> None:
+    def __init__(self, optype: OperationType, show_spinner: bool = True) -> None:
         self._optype = optype
         self._console = Console(highlight=False)
-        self._live = Live(console=self._console, refresh_per_second=10.0, transient=True)
+        self._spinner_enabled = show_spinner
+        if not self._spinner_enabled:
+            self._live = Live(console=self._console, refresh_per_second=10.0, transient=True)
+        else:
+            self._status = Status('', console=self._console, spinner_style='status.spinner')
     
     def __enter__(self) -> "Progress":
-        self._live.start()
+        if hasattr(self, '_live') and self._live:
+            self._live.start()
+        elif hasattr(self, '_status') and self._status:
+            self._status.start()
         
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        self._live.stop()
+        if hasattr(self, '_live') and self._live:
+            self._live.stop()
+        elif hasattr(self, '_status') and self._status:
+            self._status.stop()
     
     def _form_message(
         self,
@@ -79,5 +90,8 @@ class Progress:
         if message is None:
             message = self._form_message(counter, total, host, address, identity)
         
-        self._live.update(message)
+        if hasattr(self, '_live') and self._live:
+            self._live.update(message)
+        elif hasattr(self, '_status') and self._status:
+            self._status.update(message)
     
