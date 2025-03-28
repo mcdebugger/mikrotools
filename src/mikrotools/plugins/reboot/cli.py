@@ -2,7 +2,7 @@ import asyncio
 import click
 
 from mikrotools.cli.options import common_options
-from mikrotools.hoststools.common import reboot_addresses
+from mikrotools.hoststools import reboot_addresses
 from mikrotools.mikromanager import mikromanager_init
 from mikrotools.tools.config import get_hosts
 
