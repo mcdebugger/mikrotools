@@ -54,7 +54,7 @@ def print_upgradable_hosts(upgradable_hosts: list[MikrotikHost], upgrade_type: U
             console.print(f'[light_slate_blue]Host: [bold sky_blue1]{address} [red]{error}')
         console.line()
     
-    if len(upgradable_hosts) == 0:
+    if not upgradable_hosts:
         console.print(f'[bold green]No hosts to upgrade{f" {subject}" if subject is not None else ""}.')
         exit()
     
@@ -102,8 +102,8 @@ async def get_firmware_upgradable_hosts(addresses):
     console = Console()
     
     console.show_cursor(False)
-    console.print(f'[grey27]Checking for hosts applicable for firmware upgrade...')
-
+    console.print('[grey27]Checking for hosts applicable for firmware upgrade...')
+    
     with CheckUpgradableProgress(UpgradeType.FIRMWARE) as progress:
         progress.update(counter, len(addresses), len(upgradable_hosts), offline, failed)
         for address in addresses:
@@ -193,7 +193,7 @@ async def upgrade_hosts_firmware_apply(hosts):
     
     console = Console(highlight=False)
     console.show_cursor(False)
-    console.print(f'[grey27]Upgrading firmware on hosts...')
+    console.print('[grey27]Upgrading firmware on hosts...')
     
     for host in hosts:
         task = asyncio.create_task(upgrade_host_firmware(host), name=host.address)
@@ -218,10 +218,10 @@ async def upgrade_hosts_firmware_apply(hosts):
     console.show_cursor()
     
     if failed == 0:
-        console.print(f'[bold green]All hosts upgraded successfully!')
+        console.print('[bold green]All hosts upgraded successfully!')
     else:
         console.print(f'[bold yellow]Upgraded {len(hosts) - failed} hosts out of {len(hosts)}!')
-        console.print(f'[orange1]Some hosts failed to upgrade with errors:')
+        console.print('[orange1]Some hosts failed to upgrade with errors:')
         console.line()
         for address, error in failed_addresses:
             console.print(f'[light_slate_blue]Host: [bold sky_blue1]{address} [red]{error}')
@@ -235,7 +235,7 @@ async def upgrade_hosts_firmware_apply(hosts):
         elif answer.lower() == 'n':
             exit()
         else:
-            console.print(f'[bold yellow]Invalid input. Please enter "y" or "n".')
+            console.print('[bold yellow]Invalid input. Please enter "y" or "n".')
 
 async def upgrade_host_firmware(host):
     """
@@ -272,7 +272,7 @@ async def get_routeros_upgradable_hosts(addresses) -> list[MikrotikHost]:
     console = Console()
     
     console.show_cursor(False)
-    console.print(f'[grey27]Checking for hosts applicable for RouterOS upgrade...')
+    console.print('[grey27]Checking for hosts applicable for RouterOS upgrade...')
     
     for address in addresses:
         task = asyncio.create_task(get_host_if_routeros_upgradable(address), name=address)
@@ -384,10 +384,10 @@ async def upgrade_hosts_routeros_apply(hosts: list[MikrotikHost]) -> None:
                 progress.update(counter, len(hosts), task.get_name())
     
     if failed == 0:
-        console.print(f'[bold green]All hosts upgraded successfully!')
+        console.print('[bold green]All hosts upgraded successfully!')
     else:
         console.print(f'[bold yellow]Upgraded {len(hosts) - failed} hosts out of {len(hosts)}!')
-        console.print(f'[orange1]Some hosts failed to upgrade with errors:')
+        console.print('[orange1]Some hosts failed to upgrade with errors:')
         console.line()
         for address, error in failed_addresses:
             console.print(f'[light_slate_blue]Host: [bold sky_blue1]{address} [red]{error}')
@@ -472,14 +472,13 @@ def check_if_update_applicable(installed_version, min_version, filtered_version=
     """
     
     installed_version = version.parse(installed_version)
-    
-    if installed_version < version.parse(min_version):
-        if filtered_version:
-            return installed_version >= version.parse(filtered_version)
-        else:
-            return True
-    else:
+
+    if installed_version >= version.parse(min_version):
         return False
+    if filtered_version:
+        return installed_version >= version.parse(filtered_version)
+    else:
+        return True
 
 def list_outdated_hosts(hosts):
     for host in hosts:
