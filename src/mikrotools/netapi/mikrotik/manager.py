@@ -84,7 +84,7 @@ class MikrotikManager(BaseManager[MikrotikSSHClient]):
             client = cls._connections[host]
             if client and client.is_connected:
                 return client
-            
+            # Remove the client from the connection pool if it's not connected
             with cls._lock:
                 del cls._connections[host]
         
@@ -150,7 +150,7 @@ class AsyncMikrotikManager(BaseManager[AsyncMikrotikSSHClient]):
             if client and client.is_connected:
                 return client
             
-            with cls._lock:
+            async with cls._lock:
                 del cls._connections[host]
             
         if not cls._config:
