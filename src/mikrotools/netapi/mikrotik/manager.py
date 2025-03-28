@@ -38,7 +38,6 @@ class BaseClient(Protocol):
 class BaseManager(ABC, Generic[T]):
     _config: Config = None
     _connections: dict[str, T] = {}
-    _lock: threading.Lock | asyncio.Lock
     
     @classmethod
     def configure(cls, config: Config) -> None:
@@ -136,11 +135,11 @@ class MikrotikManager(BaseManager[MikrotikSSHClient]):
             pass
 
 class AsyncMikrotikManager(BaseManager[AsyncMikrotikSSHClient]):
-    _lock = asyncio.Lock()
+    _semaphore = asyncio.Semaphore(5)
 
     @classmethod
     async def get_connection(cls, host: str) -> AsyncMikrotikSSHClient:
-        async with cls._lock:
+        async with cls._semaphore:
             if host in cls._connections:
                 client = cls._connections[host]
                 if client and client.is_connected:
@@ -179,7 +178,7 @@ class AsyncMikrotikManager(BaseManager[AsyncMikrotikSSHClient]):
         try:
             yield client
         except Exception as e:
-            with cls._lock:
+            with cls._semaphore:
                 if host in cls._connections:
                     del cls._connections[host]
             await client.disconnect()
@@ -190,7 +189,7 @@ class AsyncMikrotikManager(BaseManager[AsyncMikrotikSSHClient]):
     
     @classmethod
     async def close_all(cls) -> None:
-        async with cls._lock:
+        async with cls._semaphore:
             for host, client in list(cls._connections.items()):
                 with suppress(Exception):
                     await client.disconnect()
