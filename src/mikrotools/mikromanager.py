@@ -8,6 +8,7 @@ from functools import wraps
 from mikrotools.cli.utils import cli, load_plugins
 from .config import load_config
 from .netapi import MikrotikManager, AsyncMikrotikManager
+from .tools import cleanup_all
 
 def mikromanager_init(f):
     @wraps(f)
@@ -45,6 +46,7 @@ def mikromanager_init(f):
 def main():
     load_plugins(cli)
     cli()
+    cleanup_all()
 
 if __name__ == '__main__':
     main()
