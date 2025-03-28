@@ -1,3 +1,4 @@
+import asyncio
 import click
 
 from click_option_group import optgroup, RequiredMutuallyExclusiveOptionGroup
@@ -15,13 +16,13 @@ from .utils import execute_hosts_commands
 @mikromanager_init
 @common_options
 def execute(*args, **kwargs):
-    hosts = get_hosts()
+    addresses = get_hosts()
     
     # Getting command from arguments or config file
     commands = get_commands()
     
     # Executing commands for each host in list
-    execute_hosts_commands(hosts, commands)
+    asyncio.run(execute_hosts_commands(addresses, commands))
 
 def register(cli_group):
     cli_group.add_command(execute)
