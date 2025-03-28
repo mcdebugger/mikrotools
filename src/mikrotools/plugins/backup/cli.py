@@ -1,3 +1,4 @@
+import asyncio
 import click
 
 from mikrotools.cli.options import common_options
@@ -12,7 +13,7 @@ from .utils import backup_configs
 @common_options
 def backup(sensitive, *args, **kwargs):
     hosts = get_hosts()
-    backup_configs(hosts, sensitive)
+    asyncio.run(backup_configs(hosts, sensitive))
 
 def register(cli_group):
     cli_group.add_command(backup)
