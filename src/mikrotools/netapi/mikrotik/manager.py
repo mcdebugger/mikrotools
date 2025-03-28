@@ -38,6 +38,8 @@ class BaseClient(Protocol):
 class BaseManager(ABC, Generic[T]):
     _config: Config = None
     _connections: dict[str, T] = {}
+    _lock: threading.Lock | asyncio.Lock
+    _semaphore: threading.Semaphore | asyncio.Semaphore
     
     @classmethod
     def configure(cls, config: Config) -> None:
@@ -74,24 +76,26 @@ class BaseManager(ABC, Generic[T]):
 
 class MikrotikManager(BaseManager[MikrotikSSHClient]):
     _lock = threading.Lock()
+    _semaphore = threading.Semaphore(5)
     
     @classmethod
     def get_connection(cls, host: str) -> MikrotikSSHClient:
-        with cls._lock:
-            if host in cls._connections:
-                client = cls._connections[host]
-                if client and client.is_connected:
-                    return client
-                else:
-                    del cls._connections[host]
+        if host in cls._connections:
+            client = cls._connections[host]
+            if client and client.is_connected:
+                return client
             
-            if not cls._config:
-                raise RuntimeError('MikrotikManager is not configured')
-            
-            username = cls._config.ssh.username
-            port = cls._config.ssh.port
-            password = cls._config.ssh.password
-            keyfile = cls._config.ssh.keyfile or None
+            with cls._lock:
+                del cls._connections[host]
+        
+        if not cls._config:
+            raise RuntimeError('MikrotikManager is not configured')
+        
+        username = cls._config.ssh.username
+        port = cls._config.ssh.port
+        password = cls._config.ssh.password
+        keyfile = cls._config.ssh.keyfile or None
+        with cls._semaphore:
             try:
                 client = MikrotikSSHClient(
                     host=host,
@@ -101,19 +105,20 @@ class MikrotikManager(BaseManager[MikrotikSSHClient]):
                     keyfile=keyfile
                 )
                 client.connect()
-                cls._connections[host] = client
+                with cls._lock: # protect _connections with a lock
+                    cls._connections[host] = client
+                
                 return client
             except Exception as e:
                 raise e
     
     @classmethod
     def close_all(cls) -> None:
-        with cls._lock:
-            for host, client in list(cls._connections.items()):
-                with suppress(Exception):
-                    client.disconnect()
+        for host, client in list(cls._connections.items()):
+            with suppress(Exception):
+                client.disconnect()
+            with cls._lock:
                 del cls._connections[host]
-            cls.get_connection.cache_clear()
     
     @classmethod
     @contextmanager
@@ -135,25 +140,28 @@ class MikrotikManager(BaseManager[MikrotikSSHClient]):
             pass
 
 class AsyncMikrotikManager(BaseManager[AsyncMikrotikSSHClient]):
+    _lock = asyncio.Lock()
     _semaphore = asyncio.Semaphore(5)
 
     @classmethod
     async def get_connection(cls, host: str) -> AsyncMikrotikSSHClient:
+        if host in cls._connections:
+            client = cls._connections[host]
+            if client and client.is_connected:
+                return client
+            
+            with cls._lock:
+                del cls._connections[host]
+            
+        if not cls._config:
+            raise RuntimeError('AsyncMikrotikManager is not configured')
+            
+        username = cls._config.ssh.username
+        port = cls._config.ssh.port
+        password = cls._config.ssh.password
+        keyfile = cls._config.ssh.keyfile or None
+        
         async with cls._semaphore:
-            if host in cls._connections:
-                client = cls._connections[host]
-                if client and client.is_connected:
-                    return client
-                else:
-                    del cls._connections[host]
-                
-            if not cls._config:
-                raise RuntimeError('AsyncMikrotikManager is not configured')
-                
-            username = cls._config.ssh.username
-            port = cls._config.ssh.port
-            password = cls._config.ssh.password
-            keyfile = cls._config.ssh.keyfile or None
             try:
                 client = AsyncMikrotikSSHClient(
                     host=host,
@@ -163,7 +171,8 @@ class AsyncMikrotikManager(BaseManager[AsyncMikrotikSSHClient]):
                     keyfile=keyfile
                 )
                 await client.connect()
-                cls._connections[host] = client
+                async with cls._lock: # protect _connections with a lock
+                    cls._connections[host] = client
                 return client
             except Exception as e:
                 raise e
@@ -178,7 +187,7 @@ class AsyncMikrotikManager(BaseManager[AsyncMikrotikSSHClient]):
         try:
             yield client
         except Exception as e:
-            with cls._semaphore:
+            async with cls._lock:
                 if host in cls._connections:
                     del cls._connections[host]
             await client.disconnect()
@@ -189,8 +198,8 @@ class AsyncMikrotikManager(BaseManager[AsyncMikrotikSSHClient]):
     
     @classmethod
     async def close_all(cls) -> None:
-        async with cls._semaphore:
-            for host, client in list(cls._connections.items()):
-                with suppress(Exception):
-                    await client.disconnect()
+        for host, client in list(cls._connections.items()):
+            with suppress(Exception):
+                await client.disconnect()
+            async with cls._lock: # protect _connections with a lock
                 del cls._connections[host]
