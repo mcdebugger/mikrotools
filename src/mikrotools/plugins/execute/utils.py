@@ -7,7 +7,7 @@ def execute_hosts_commands(hosts, commands):
         print(f'{fcolors.bold}{fcolors.lightblue}{"-"*30}{fcolors.default}')
         print(f'{fcolors.bold}{fcolors.lightblue}Working with host: {fcolors.lightpurple}{host}{fcolors.default}')
         
-        with MikrotikManager.get_connection(host) as device:
+        with MikrotikManager.session(host) as device:
             identity = device.get_identity()
             print(f'{fcolors.bold}{fcolors.lightblue}Identity: {fcolors.lightpurple}{identity}{fcolors.default}')
             installed_version = device.get_routeros_installed_version()

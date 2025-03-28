@@ -7,7 +7,7 @@ from mikrotools.netapi import MikrotikManager
 
 def get_device_config(host, sensitive=False):
     # Exporting current config
-    with MikrotikManager.get_connection(host=host.address) as device:
+    with MikrotikManager.session(host=host.address) as device:
         if sensitive:
             # Exporting sensitive config
             if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
@@ -36,7 +36,7 @@ def backup_configs(addresses, sensitive=False):
         for address in addresses:
             host = MikrotikHost(address=address)
             try:
-                with MikrotikManager.get_connection(host=address) as device:
+                with MikrotikManager.session(host=address) as device:
                     host.identity = device.get_identity()
                     host.installed_routeros_version = device.get_routeros_installed_version()
                     

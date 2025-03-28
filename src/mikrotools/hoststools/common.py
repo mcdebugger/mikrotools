@@ -13,7 +13,7 @@ from .models.operations import OperationType
 from mikrotools.netapi import AsyncMikrotikManager
 
 async def get_mikrotik_host(address: str) -> MikrotikHost:
-    async with await AsyncMikrotikManager.get_connection(address) as device:
+    async with AsyncMikrotikManager.async_session(address) as device:
         identity = await device.get_identity()
         pkgupdate = await device.get_system_package_update()
         routerboard = await device.get_system_routerboard()
@@ -89,7 +89,7 @@ async def reboot_hosts(hosts):
     console.print(f'[bold green]All hosts rebooted successfully!')
 
 async def reboot_host(host):
-    async with await AsyncMikrotikManager.get_connection(host.address) as device:
+    async with AsyncMikrotikManager.async_session(host.address) as device:
         await device.execute_command_raw('/system reboot')
     
     return host

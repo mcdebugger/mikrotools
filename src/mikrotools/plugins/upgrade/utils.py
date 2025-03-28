@@ -83,7 +83,7 @@ def print_upgradable_hosts(upgradable_hosts: list[MikrotikHost], upgrade_type: U
 # Upgrade firmware
 
 async def get_host_if_firmware_upgradable(address) -> MikrotikHost:
-    async with await AsyncMikrotikManager.get_connection(address) as device:
+    async with AsyncMikrotikManager.async_session(address) as device:
         routerboard = await device.get_system_routerboard()
         
         if is_upgradable(routerboard.current_firmware, routerboard.upgrade_firmware):
@@ -244,7 +244,7 @@ async def upgrade_host_firmware(host):
     :param host: A MikrotikHost object representing the host to upgrade.
     :return: None
     """
-    async with await AsyncMikrotikManager.get_connection(host.address) as device:
+    async with AsyncMikrotikManager.async_session(host.address) as device:
         await device.execute_command_raw('/system routerboard upgrade')
 
     return host
@@ -252,7 +252,7 @@ async def upgrade_host_firmware(host):
 # Upgrade RouterOS
 
 async def get_host_if_routeros_upgradable(address) -> MikrotikHost:
-    async with await AsyncMikrotikManager.get_connection(address) as device:
+    async with AsyncMikrotikManager.async_session(address) as device:
         await device.execute_command_raw('/system package update check-for-updates')
         pkgupdate = await device.get_system_package_update()
         
@@ -408,7 +408,7 @@ async def upgrade_host_routeros(host: MikrotikHost) -> MikrotikHost:
     Returns:
         MikrotikHost: The updated MikrotikHost object.
     """
-    async with await AsyncMikrotikManager.get_connection(host.address) as device:
+    async with AsyncMikrotikManager.async_session(host.address) as device:
         await device.execute_command_raw('/system package update check-for-updates')
         await device.execute_command_raw('/system package update install')
     
@@ -438,7 +438,7 @@ def get_outdated_hosts(hosts, min_version, filtered_version):
         print_outdated_progress(host, counter, len(hosts), len(outdated_hosts), offline)
 
         try:
-            with MikrotikManager.get_connection(host) as device:
+            with MikrotikManager.session(host) as device:
                 installed_version = device.get_routeros_installed_version()
         except TimeoutError:
             offline += 1
