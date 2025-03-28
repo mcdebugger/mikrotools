@@ -1,21 +1,25 @@
-from mikrotools.netapi import MikrotikManager
-from mikrotools.tools.colors import fcolors_256 as fcolors
+from rich.console import Console
+
+from mikrotools.netapi import MikrotikManager, AsyncMikrotikManager
 
 def execute_hosts_commands(hosts, commands):
+    console = Console()
+    console.print('[gray27]Executing commands on hosts...')
     for host in hosts:
         # Printing separator
-        print(f'{fcolors.bold}{fcolors.lightblue}{"-"*30}{fcolors.default}')
-        print(f'{fcolors.bold}{fcolors.lightblue}Working with host: {fcolors.lightpurple}{host}{fcolors.default}')
+        console.print(f'[bold sky_blue2]{"-"*30}[/]')
+        console.print(f'[bold sky_blue2]Working with host:[/] [medium_purple1]{host}[/]')
         
         with MikrotikManager.session(host) as device:
             identity = device.get_identity()
-            print(f'{fcolors.bold}{fcolors.lightblue}Identity: {fcolors.lightpurple}{identity}{fcolors.default}')
+            console.print(f'[bold sky_blue2]Identity:[/] [medium_purple1]{identity}[/]')
             installed_version = device.get_routeros_installed_version()
-            print(f'{fcolors.bold}{fcolors.lightblue}Installed version: {fcolors.lightpurple}{installed_version}{fcolors.default}')
+            console.print(f'[bold sky_blue2]Installed version:[/] [medium_purple1]{installed_version}[/]')
             
             # Executing commands
             for command in commands:
-                print(f'\n{fcolors.bold}{fcolors.darkgray}Executing command: {command}{fcolors.default}')
+                console.line()
+                console.print(f'[bold grey27]Executing command: {command}[/]')
                 result = device.execute_command_raw(command)
                 # Printing execution result
-                print(result)
+                console.print(result)
