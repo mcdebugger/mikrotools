@@ -1,32 +1,31 @@
 from rich.console import Console
 from rich.live import Live
-from rich.status import Status
+from rich.spinner import Spinner
 
 from mikrotools.hoststools.models import MikrotikHost, OperationType
 
 class Progress:
-    def __init__(self, optype: OperationType, show_spinner: bool = True) -> None:
+    def __init__(self, optype: OperationType, message: str | None = None, show_spinner: bool = True) -> None:
         self._optype = optype
         self._console = Console(highlight=False)
         self._spinner_enabled = show_spinner
-        if not self._spinner_enabled:
-            self._live = Live(console=self._console, refresh_per_second=10.0, transient=True)
-        else:
-            self._status = Status('', console=self._console, spinner_style='status.spinner')
+        self._message: str = message if message is not None else ''
+        if self._spinner_enabled:
+            self._spinner = Spinner('dots', text=self._message, style='status.spinner')
+
+        self._live = Live(self.renderable, console=self._console, refresh_per_second=10.0, transient=True)
+    
+    @property
+    def renderable(self) -> Spinner | str:
+        return self._spinner if self._spinner_enabled else self._message
     
     def __enter__(self) -> "Progress":
-        if hasattr(self, '_live') and self._live:
-            self._live.start()
-        elif hasattr(self, '_status') and self._status:
-            self._status.start()
+        self._live.start()
         
         return self
     
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        if hasattr(self, '_live') and self._live:
-            self._live.stop()
-        elif hasattr(self, '_status') and self._status:
-            self._status.stop()
+        self._live.stop()
     
     def _form_message(
         self,
@@ -78,6 +77,15 @@ class Progress:
                 message += f' [yellow]{address}[/]'
         
         return message
+    
+    def _update(self, message: str) -> None:
+        self._message = message
+        
+        if self._spinner_enabled:
+            self._spinner = Spinner('dots', text=self._message, style='status.spinner')
+
+        self._live.update(self.renderable, refresh=True)
+    
     def update(
         self,
         counter: int | None = None,
@@ -90,8 +98,5 @@ class Progress:
         if message is None:
             message = self._form_message(counter, total, host, address, identity)
         
-        if hasattr(self, '_live') and self._live:
-            self._live.update(message)
-        elif hasattr(self, '_status') and self._status:
-            self._status.update(message)
+        self._update(message)
     
