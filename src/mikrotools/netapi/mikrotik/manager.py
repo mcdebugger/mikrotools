@@ -76,7 +76,7 @@ class BaseManager(ABC, Generic[T]):
 
 class MikrotikManager(BaseManager[MikrotikSSHClient]):
     _lock = threading.Lock()
-    _semaphore = threading.Semaphore(5)
+    _semaphore = threading.Semaphore(10)
     
     @classmethod
     def get_connection(cls, host: str) -> MikrotikSSHClient:
