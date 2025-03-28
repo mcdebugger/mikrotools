@@ -78,7 +78,7 @@ class BaseManager(ABC, Generic[T]):
 
 class MikrotikManager(BaseManager[MikrotikSSHClient]):
     _lock = threading.Lock()
-    _semaphore = threading.Semaphore(20)
+    _semaphore = threading.Semaphore(100)
     _connections = {}
     
     @classmethod
@@ -145,7 +145,7 @@ class MikrotikManager(BaseManager[MikrotikSSHClient]):
 
 class AsyncMikrotikManager(BaseManager[AsyncMikrotikSSHClient]):
     _lock = asyncio.Lock()
-    _semaphore = asyncio.Semaphore(20)
+    _semaphore = asyncio.Semaphore(100)
     _connections = {}
 
     @classmethod
