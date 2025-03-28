@@ -34,4 +34,4 @@ class CheckUpgradableProgress(Progress):
 
     def update(self, counter: int, total: int, outdated: int, offline: int, failed: int = 0, address: str = None, identity: str = None) -> None:
         message = self._form_message(counter, total, outdated, offline, failed, address, identity)
-        self._live.update(message)
+        self._update(message)
