@@ -12,7 +12,7 @@ from .utils import execute_hosts_commands
 @click.command(name='exec', help='Execute commands on hosts')
 @optgroup.group('Commands to execute', cls=RequiredMutuallyExclusiveOptionGroup)
 @optgroup.option('-e', '--execute-command')
-@optgroup.option('-C', '--commands-file')
+@optgroup.option('-C', '--commands-file', type=click.Path(exists=True))
 @mikromanager_init
 @common_options
 def execute(*args, **kwargs):
