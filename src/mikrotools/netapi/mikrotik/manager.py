@@ -120,7 +120,7 @@ class MikrotikManager(BaseManager[MikrotikSSHClient]):
     @contextmanager
     def session(cls, host: str) -> Generator[MikrotikSSHClient, None, None]:
         client = cls.get_connection(host)
-        if not client or not client.is_connected():
+        if not client or not client.is_connected:
             raise ConnectionError(f'No active connection to {host}')
         
         try:
@@ -173,7 +173,7 @@ class AsyncMikrotikManager(BaseManager[AsyncMikrotikSSHClient]):
     @asynccontextmanager
     async def async_session(cls, host: str) -> AsyncGenerator[AsyncMikrotikSSHClient, None]:
         client = await cls.get_connection(host)
-        if not client or not client.is_connected():
+        if not client or not client.is_connected:
             raise ConnectionError(f'No active connection to {host}')
         
         try:
