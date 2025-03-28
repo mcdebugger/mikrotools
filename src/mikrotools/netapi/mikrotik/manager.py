@@ -39,7 +39,7 @@ class BaseClient(Protocol):
 
 class BaseManager(ABC, Generic[T]):
     _config: Config = None
-    _connections: dict[str, T] = {}
+    _connections: dict[str, T]
     _lock: threading.Lock | asyncio.Lock
     _semaphore: threading.Semaphore | asyncio.Semaphore
     
@@ -79,6 +79,7 @@ class BaseManager(ABC, Generic[T]):
 class MikrotikManager(BaseManager[MikrotikSSHClient]):
     _lock = threading.Lock()
     _semaphore = threading.Semaphore(10)
+    _connections = {}
     
     @classmethod
     def get_connection(cls, host: str) -> MikrotikSSHClient:
@@ -145,6 +146,7 @@ class MikrotikManager(BaseManager[MikrotikSSHClient]):
 class AsyncMikrotikManager(BaseManager[AsyncMikrotikSSHClient]):
     _lock = asyncio.Lock()
     _semaphore = asyncio.Semaphore(5)
+    _connections = {}
 
     @classmethod
     async def get_connection(cls, host: str) -> AsyncMikrotikSSHClient:
