@@ -10,7 +10,19 @@ from mikrotools.cli.progress import Progress
 from .models import MikrotikHost
 from .models.operations import OperationType
 
-from mikrotools.netapi import AsyncMikrotikManager
+from mikrotools.netapi import MikrotikManager, AsyncMikrotikManager
+
+__all__ = [
+    'cleanup_connections',
+    'get_mikrotik_host',
+    'reboot_addresses',
+    'reboot_hosts',
+    'reboot_host'
+]
+
+def cleanup_connections():
+    MikrotikManager.close_all()
+    AsyncMikrotikManager.close_all()
 
 async def get_mikrotik_host(address: str) -> MikrotikHost:
     async with AsyncMikrotikManager.async_session(address) as device:
