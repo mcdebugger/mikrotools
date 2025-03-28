@@ -40,10 +40,17 @@ async def execute_hosts_commands(addresses: list[str], commands: list[str]) -> N
         try:
             identity, routeros_installed_version, dt, results = await task
         except TimeoutError:
-            console.print(f'Connection timeout while connecting to {task.get_name()}') # type: ignore
+            console.print(
+                f'[bold red3]Error connecting to [/]'
+                f'[light_pink3]{task.get_name()}:[/] ' # type: ignore
+                f'[gold3]Connection timeout[/]'
+            )
             continue
         except Exception as e:
-            console.print(f'Error while executing command on {task.get_name()}: {e}') # type: ignore
+            console.print(
+                f'[bold red3]Error while executing command on '
+                f'[light_pink3]{task.get_name()}:[/] [gold3]{e}[/]' # type: ignore
+            )
             continue
         
         # Printing separator
