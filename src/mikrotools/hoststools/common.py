@@ -22,7 +22,7 @@ __all__ = [
 
 def cleanup_connections():
     MikrotikManager.close_all()
-    AsyncMikrotikManager.close_all()
+    asyncio.run(AsyncMikrotikManager.close_all())
 
 async def get_mikrotik_host(address: str) -> MikrotikHost:
     async with AsyncMikrotikManager.async_session(address) as device:

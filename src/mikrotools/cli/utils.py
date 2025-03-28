@@ -5,6 +5,7 @@ import click
 
 from mikrotools.cli.options import common_options
 from mikrotools.tools.log import setup_logging
+from mikrotools.tools import cleanup_all
 
 class AliasedGroup(click.Group):
     def __init__(self, *args, **kwargs):
@@ -92,6 +93,7 @@ class Mutex(click.Option):
 def cli(ctx, *args, **kwargs):
     # Setting up logging
     setup_logging(ctx.params['debug'])
+    ctx.call_on_close(cleanup_all)
     
     # Invoking default command
     # if ctx.invoked_subcommand is None:

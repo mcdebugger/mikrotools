@@ -1,5 +1,5 @@
 import asyncio
-
+import logging
 import threading
 
 from abc import ABC, abstractmethod
@@ -12,6 +12,8 @@ from mikrotools.config import Config
 from .client import MikrotikSSHClient, AsyncMikrotikSSHClient
 
 T = TypeVar('T', bound='BaseClient')
+
+logger = logging.getLogger(__name__)
 
 @runtime_checkable
 class BaseClient(Protocol):
@@ -114,6 +116,7 @@ class MikrotikManager(BaseManager[MikrotikSSHClient]):
     
     @classmethod
     def close_all(cls) -> None:
+        logger.debug('Closing all connections for MikrotikManager')
         for host, client in list(cls._connections.items()):
             with suppress(Exception):
                 client.disconnect()
@@ -198,6 +201,7 @@ class AsyncMikrotikManager(BaseManager[AsyncMikrotikSSHClient]):
     
     @classmethod
     async def close_all(cls) -> None:
+        logger.debug('Closing all connections for AsyncMikrotikManager')
         for host, client in list(cls._connections.items()):
             with suppress(Exception):
                 await client.disconnect()
