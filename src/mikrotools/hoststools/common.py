@@ -13,7 +13,7 @@ from .models.operations import OperationType
 from mikrotools.netapi import AsyncMikrotikManager
 
 async def get_mikrotik_host(address: str) -> MikrotikHost:
-    async with await AsyncMikrotikManager.get_connection(address) as device:
+    async with AsyncMikrotikManager.async_session(address) as device:
         identity = await device.get_identity()
         pkgupdate = await device.get_system_package_update()
         routerboard = await device.get_system_routerboard()
@@ -38,20 +38,21 @@ async def get_mikrotik_host(address: str) -> MikrotikHost:
     )
 
 async def reboot_addresses(addresses):
-    hosts = []
-
-    print(f'The following hosts will be rebooted:')
+    print('The following hosts will be rebooted:')
     for address in addresses:
         rprint(f'[light_slate_blue]Host: [bold sky_blue1]{address}')
     
-    is_reboot_confirmed = Confirm.ask(f'[bold yellow]Would you like to reboot devices now?[/] '
-                                      f'[bold red]\\[y/n][/]', show_choices=False)
-
-    if not is_reboot_confirmed:
-        exit()
-    else:
+    if Confirm.ask(
+        f'[bold yellow]Would you like to reboot devices now?[/] '
+        f'[bold red]\\[y/n][/]',
+        show_choices=False,
+    ):
+        hosts = []
+        
         [hosts.append(MikrotikHost(address=address)) for address in addresses]
         await reboot_hosts(hosts)
+    else:
+        exit()
 
 async def reboot_hosts(hosts):
     failed = 0
@@ -82,14 +83,14 @@ async def reboot_hosts(hosts):
     console.line()
     if failed > 0:
         console.print(f'[bold orange1]Rebooted {len(hosts) - failed} hosts out of {len(hosts)}!\n')
-        console.print(f'[bold red3]The following hosts failed to reboot:')
+        console.print('[bold red3]The following hosts failed to reboot:')
         for address, error in failed_addresses:
             console.print(f'[red]{address}: [yellow]{error}')
         exit()
-    console.print(f'[bold green]All hosts rebooted successfully!')
+    console.print('[bold green]All hosts rebooted successfully!')
 
 async def reboot_host(host):
-    async with await AsyncMikrotikManager.get_connection(host.address) as device:
+    async with AsyncMikrotikManager.async_session(host.address) as device:
         await device.execute_command_raw('/system reboot')
     
     return host

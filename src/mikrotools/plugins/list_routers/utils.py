@@ -98,6 +98,8 @@ async def list_hosts(addresses, follow: bool = False):
                 failed = True
                 host = MikrotikHost(address=task.get_name())
                 error_message = 'Authentication failed'
+            except TypeError as e:
+                raise e
             except Exception as e:
                 failed = True
                 host = MikrotikHost(address=task.get_name())

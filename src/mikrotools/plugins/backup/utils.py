@@ -7,7 +7,7 @@ from mikrotools.netapi import MikrotikManager
 
 def get_device_config(host, sensitive=False):
     # Exporting current config
-    with MikrotikManager.get_connection(host=host.address) as device:
+    with MikrotikManager.session(host=host.address) as device:
         if sensitive:
             # Exporting sensitive config
             if version.parse(host.installed_routeros_version) >= version.parse('7.0'):
@@ -36,7 +36,7 @@ def backup_configs(addresses, sensitive=False):
         for address in addresses:
             host = MikrotikHost(address=address)
             try:
-                with MikrotikManager.get_connection(host=address) as device:
+                with MikrotikManager.session(host=address) as device:
                     host.identity = device.get_identity()
                     host.installed_routeros_version = device.get_routeros_installed_version()
                     
@@ -45,7 +45,7 @@ def backup_configs(addresses, sensitive=False):
                 failed_hosts.append(host)
                 progress.update(counter, len(addresses), address=address)
                 continue
-        
+            
             # Writing current config to file
             with open(f'{host.identity}.rsc', 'w') as f:
                 f.write(current_config)
@@ -58,13 +58,13 @@ def backup_configs(addresses, sensitive=False):
                 progress.update(counter, len(addresses), address=address)
     
     console = Console(highlight=False)
-
-    if len(failed_hosts) > 0:
+    
+    if failed_hosts:
         console.print(f'[bold orange1]Backup completed with errors!\n'
                        f'[bold gold1]Backed up {len(addresses) - len(failed_hosts)} '
                        f'hosts out of {len(addresses)}\n')
-        console.print(f'[bold red3]The following hosts failed to backup:')
+        console.print('[bold red3]The following hosts failed to backup:')
         for host in failed_hosts:
             console.print(f'[thistle1]{host.address}')
     else:
-        console.print(f'[bold green]All hosts backed up successfully!')
+        console.print('[bold green]All hosts backed up successfully!')
