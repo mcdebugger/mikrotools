@@ -1,5 +1,5 @@
 from functools import wraps
-from importlib.metadata import entry_points
+from importlib.metadata import entry_points, version as v
 
 import click
 
@@ -87,10 +87,17 @@ class Mutex(click.Option):
                     self.required = False
         return super(Mutex, self).handle_parse_result(ctx, opts, args)
 
-@click.group(cls=AliasedGroup, context_settings=dict(help_option_names=['-h', '--help']))
+@click.group(cls=AliasedGroup, invoke_without_command=True, context_settings=dict(help_option_names=['-h', '--help']))
 @common_options
+@click.option('-V', '--version', is_flag=True, help='Print version and exit')
 @click.pass_context
-def cli(ctx, *args, **kwargs):
+def cli(ctx, version, *args, **kwargs):
+    if version:
+        click.echo(f'mikrotools {v("mikrotools")}')
+        ctx.exit()
+    if ctx.invoked_subcommand is None:
+        click.echo(ctx.get_help())
+        ctx.exit()
     # Setting up logging
     setup_logging(ctx.params['debug'])
     ctx.call_on_close(cleanup_all)
