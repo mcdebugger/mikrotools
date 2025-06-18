@@ -23,9 +23,11 @@ def get_commands_from_file(filename):
 def get_hosts() -> list[InventoryItem]:
     ctx = click.get_current_context()
     if ctx.params['host']:
-        invsource = get_inventory_source(ctx.params['host'])
-    elif ctx.params['inventory_source']:
-        invsource = get_inventory_source(ctx.params['inventory_source'])
+        invsource = get_inventory_source(source=ctx.params['host'])
+    elif ctx.params['inventory_file']:
+        invsource = get_inventory_source(config=
+            InventorySourceConfig(type='file', path=ctx.params['inventory_file'])
+        )
     else:
         # Getting config from YAML file
         config = get_config()
