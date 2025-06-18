@@ -1,7 +1,7 @@
 import click
 import logging
 
-from mikrotools.config import get_config
+from mikrotools.config import get_config, InventorySourceConfig
 from mikrotools.inventory import get_inventory_source, InventoryItem
 
 logger = logging.getLogger(__name__)
@@ -29,12 +29,18 @@ def get_hosts() -> list[InventoryItem]:
     else:
         # Getting config from YAML file
         config = get_config()
-        if not config.inventory.hostsFile:
+        if config.inventory.sources:
+            logger.debug(f'get_hosts: Config: {config}')
+            logger.debug(f'get_hosts: Inventory sources set from config: '
+                        f'{config.inventory.sources}')
+            invsource = get_inventory_source(config=config.inventory.sources[0])
+        elif config.inventory.hostsFile:
+            logger.debug(f'get_hosts: Config: {config}')
+            logger.debug(f'get_hosts: Inventory file path set from config: '
+                        f'{config.inventory.hostsFile}')
+            invsource = get_inventory_source(source=config.inventory.hostsFile)
+        else:
             logger.error('Inventory source is not specified')
             raise click.UsageError('Inventory source or host is not specified')
-        logger.debug(f'get_hosts: Config: {config}')
-        logger.debug(f'get_hosts: Inventory file path set from config: '
-                     f'{config.inventory.hostsFile}')
-        invsource = get_inventory_source(config.inventory.hostsFile)
     
     return invsource.get_hosts()
