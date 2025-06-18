@@ -11,6 +11,7 @@ from rich.table import Table
 
 from mikrotools.hoststools.common import get_mikrotik_host
 from mikrotools.hoststools.models import MikrotikHost
+from mikrotools.inventory import InventoryItem
 from mikrotools.netapi import AsyncMikrotikManager
 
 def create_table():
@@ -63,8 +64,7 @@ def print_table(rows):
     
     console.print(table)
 
-async def list_hosts(addresses, follow: bool = False):
-    hosts = []
+async def list_hosts(items: list[InventoryItem], follow: bool = False):
     tasks = []
     rows = {}
     offline_hosts = 0
@@ -77,12 +77,12 @@ async def list_hosts(addresses, follow: bool = False):
         Layout(table, name='table'),
         Layout(footer, name='footer', size=3)
     )
-    
-    for address in addresses:
-        task = asyncio.create_task(get_mikrotik_host(address), name=address)
+    for item in items:
+        task = asyncio.create_task(get_mikrotik_host(item), name=item.address)
         tasks.append(task)
-
+    
     with Live(layout, console=console, screen=True, refresh_per_second=10) as live:
+        hosts = []
         async for task in asyncio.as_completed(tasks):
             error_message = None
             failed = False

@@ -8,6 +8,7 @@ from paramiko.ssh_exception import SSHException
 from typing import Generator, AsyncGenerator, Protocol, TypeVar, Generic, overload, runtime_checkable
 
 from mikrotools.config import Config
+from mikrotools.inventory import InventoryItem
 
 from .client import MikrotikSSHClient, AsyncMikrotikSSHClient
 
@@ -50,25 +51,25 @@ class BaseManager(ABC, Generic[T]):
     
     @overload
     @classmethod
-    def get_connection(cls, host: str) -> T: ...
+    def get_connection(cls, host: InventoryItem) -> T: ...
     
     @overload
     @classmethod
-    async def get_connection(cls, host: str) -> T: ...
+    async def get_connection(cls, host: InventoryItem) -> T: ...
     
     @classmethod
     @abstractmethod
-    def get_connection(cls, host: str) -> T:
+    def get_connection(cls, host: InventoryItem) -> T:
         raise NotImplementedError
     
     @classmethod
     @abstractmethod
-    def session(cls, host: str) -> Generator[T, None, None]:
+    def session(cls, host: InventoryItem) -> Generator[T, None, None]:
         raise NotImplementedError
     
     @classmethod
     @abstractmethod
-    async def async_session(cls, host: str) -> AsyncGenerator[T, None]:
+    async def async_session(cls, host: InventoryItem) -> AsyncGenerator[T, None]:
         raise NotImplementedError
     
     @classmethod
@@ -82,9 +83,9 @@ class MikrotikManager(BaseManager[MikrotikSSHClient]):
     _connections = {}
     
     @classmethod
-    def get_connection(cls, host: str) -> MikrotikSSHClient:
-        if host in cls._connections:
-            client = cls._connections[host]
+    def get_connection(cls, host: InventoryItem) -> MikrotikSSHClient:
+        if host.address in cls._connections:
+            client = cls._connections[host.address]
             if client and client.is_connected:
                 return client
             # Remove the client from the connection pool if it's not connected
@@ -101,7 +102,7 @@ class MikrotikManager(BaseManager[MikrotikSSHClient]):
         with cls._semaphore:
             try:
                 client = MikrotikSSHClient(
-                    host=host,
+                    host=host.address,
                     port=port,
                     username=username,
                     password=password,
@@ -109,7 +110,7 @@ class MikrotikManager(BaseManager[MikrotikSSHClient]):
                 )
                 client.connect()
                 with cls._lock: # protect _connections with a lock
-                    cls._connections[host] = client
+                    cls._connections[host.address] = client
                 
                 return client
             except Exception as e:
@@ -118,25 +119,25 @@ class MikrotikManager(BaseManager[MikrotikSSHClient]):
     @classmethod
     def close_all(cls) -> None:
         logger.debug('Closing all connections for MikrotikManager')
-        for host, client in list(cls._connections.items()):
+        for address, client in list(cls._connections.items()):
             with suppress(Exception):
                 client.disconnect()
             with cls._lock:
-                del cls._connections[host]
+                del cls._connections[address]
     
     @classmethod
     @contextmanager
-    def session(cls, host: str) -> Generator[MikrotikSSHClient, None, None]:
+    def session(cls, host: InventoryItem) -> Generator[MikrotikSSHClient, None, None]:
         client = cls.get_connection(host)
         if not client or not client.is_connected:
-            raise ConnectionError(f'No active connection to {host}')
+            raise ConnectionError(f'No active connection to {host.address}')
         
         try:
             yield client
         except SSHException as e:
             with cls._lock:
-                if host in cls._connections:
-                    del cls._connections[host]
+                if host.address in cls._connections:
+                    del cls._connections[host.address]
             client.disconnect()
             raise e
         finally:
@@ -149,14 +150,14 @@ class AsyncMikrotikManager(BaseManager[AsyncMikrotikSSHClient]):
     _connections = {}
 
     @classmethod
-    async def get_connection(cls, host: str) -> AsyncMikrotikSSHClient:
-        if host in cls._connections:
-            client = cls._connections[host]
+    async def get_connection(cls, host: InventoryItem) -> AsyncMikrotikSSHClient:
+        if host.address in cls._connections:
+            client = cls._connections[host.address]
             if client and client.is_connected:
                 return client
             
             async with cls._lock:
-                del cls._connections[host]
+                del cls._connections[host.address]
             
         if not cls._config:
             raise RuntimeError('AsyncMikrotikManager is not configured')
@@ -169,7 +170,7 @@ class AsyncMikrotikManager(BaseManager[AsyncMikrotikSSHClient]):
         async with cls._semaphore:
             try:
                 client = AsyncMikrotikSSHClient(
-                    host=host,
+                    host=host.address,
                     port=port,
                     username=username,
                     password=password,
@@ -177,24 +178,24 @@ class AsyncMikrotikManager(BaseManager[AsyncMikrotikSSHClient]):
                 )
                 await client.connect()
                 async with cls._lock: # protect _connections with a lock
-                    cls._connections[host] = client
+                    cls._connections[host.address] = client
                 return client
             except Exception as e:
                 raise e
     
     @classmethod
     @asynccontextmanager
-    async def async_session(cls, host: str) -> AsyncGenerator[AsyncMikrotikSSHClient, None]:
+    async def async_session(cls, host: InventoryItem) -> AsyncGenerator[AsyncMikrotikSSHClient, None]:
         client = await cls.get_connection(host)
         if not client or not client.is_connected:
-            raise ConnectionError(f'No active connection to {host}')
+            raise ConnectionError(f'No active connection to {host.address}')
         
         try:
             yield client
         except Exception as e:
             async with cls._lock:
-                if host in cls._connections:
-                    del cls._connections[host]
+                if host.address in cls._connections:
+                    del cls._connections[host.address]
             await client.disconnect()
             raise e
         finally:
@@ -204,8 +205,8 @@ class AsyncMikrotikManager(BaseManager[AsyncMikrotikSSHClient]):
     @classmethod
     async def close_all(cls) -> None:
         logger.debug('Closing all connections for AsyncMikrotikManager')
-        for host, client in list(cls._connections.items()):
+        for address, client in list(cls._connections.items()):
             with suppress(Exception):
                 await client.disconnect()
             async with cls._lock: # protect _connections with a lock
-                del cls._connections[host]
+                del cls._connections[address]

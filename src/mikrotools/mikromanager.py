@@ -11,7 +11,7 @@ from .netapi import MikrotikManager, AsyncMikrotikManager
 
 def mikromanager_init(f):
     @wraps(f)
-    def wrapper(port, user, password, config_file, inventory_file, jump, *args, **kwargs):
+    def wrapper(port, user, password, config_file, inventory_source, jump, *args, **kwargs):
         logger = logging.getLogger(__name__)
         try:
             config = load_config(config_file)
@@ -27,8 +27,8 @@ def mikromanager_init(f):
             config.ssh.keyfile = None
             # Password prompt
             config.ssh.password = click.prompt('Password', hide_input=True)
-        if inventory_file is not None:
-            config.inventory.hostsFile = inventory_file
+        if inventory_source is not None:
+            config.inventory.hostsFile = inventory_source
         if jump:
             config.ssh.jump = True
         

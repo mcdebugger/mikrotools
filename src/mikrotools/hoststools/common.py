@@ -10,6 +10,7 @@ from mikrotools.cli.progress import Progress
 from .models import MikrotikHost
 from .models.operations import OperationType
 
+from mikrotools.inventory import InventoryItem
 from mikrotools.netapi import MikrotikManager, AsyncMikrotikManager
 
 __all__ = [
@@ -24,8 +25,8 @@ def cleanup_connections():
     MikrotikManager.close_all()
     asyncio.run(AsyncMikrotikManager.close_all())
 
-async def get_mikrotik_host(address: str) -> MikrotikHost:
-    async with AsyncMikrotikManager.async_session(address) as device:
+async def get_mikrotik_host(host: InventoryItem) -> MikrotikHost:
+    async with AsyncMikrotikManager.async_session(host) as device:
         identity = await device.get_identity()
         pkgupdate = await device.get_system_package_update()
         routerboard = await device.get_system_routerboard()
@@ -37,7 +38,7 @@ async def get_mikrotik_host(address: str) -> MikrotikHost:
         public_address = await device.get('/ip cloud', 'public-address')
     
     return MikrotikHost(
-        address=address,
+        address=host.address,
         identity=identity,
         installed_routeros_version=pkgupdate.installed_version,
         latest_routeros_version=pkgupdate.latest_version,
@@ -49,24 +50,24 @@ async def get_mikrotik_host(address: str) -> MikrotikHost:
         public_address=public_address
     )
 
-async def reboot_addresses(addresses):
+async def reboot_addresses(items: list[InventoryItem]) -> None:
     print('The following hosts will be rebooted:')
-    for address in addresses:
-        rprint(f'[light_slate_blue]Host: [bold sky_blue1]{address}')
-    
+    for item in items:
+        rprint(f'[light_slate_blue]Host: [bold sky_blue1]{item.address}')
+
     if Confirm.ask(
         f'[bold yellow]Would you like to reboot devices now?[/] '
         f'[bold red]\\[y/n][/]',
         show_choices=False,
     ):
-        hosts = []
-        
-        [hosts.append(MikrotikHost(address=address)) for address in addresses]
+        hosts: list[MikrotikHost] = []
+
+        hosts.extend(MikrotikHost(address=item.address) for item in items)
         await reboot_hosts(hosts)
     else:
         exit()
 
-async def reboot_hosts(hosts):
+async def reboot_hosts(hosts: list[MikrotikHost]) -> None:
     failed = 0
     failed_addresses = []
     tasks = []
@@ -101,8 +102,8 @@ async def reboot_hosts(hosts):
         exit()
     console.print('[bold green]All hosts rebooted successfully!')
 
-async def reboot_host(host):
-    async with AsyncMikrotikManager.async_session(host.address) as device:
+async def reboot_host(host: MikrotikHost) -> MikrotikHost:
+    async with AsyncMikrotikManager.async_session(InventoryItem(address=host.address)) as device:
         await device.execute_command_raw('/system reboot')
     
     return host

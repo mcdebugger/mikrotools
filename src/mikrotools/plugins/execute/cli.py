@@ -16,13 +16,13 @@ from .utils import execute_hosts_commands
 @common_options
 @coro
 async def execute(*args, **kwargs):
-    addresses = get_hosts()
+    hosts = get_hosts()
     
     # Getting command from arguments or config file
     commands = get_commands()
     
     # Executing commands for each host in list
-    await execute_hosts_commands(addresses, commands)
+    await execute_hosts_commands(hosts, commands)
 
 def register(cli_group):
     cli_group.add_command(execute)

@@ -34,7 +34,7 @@ def outdated(min_version, filtered_version, output_file, *args, **kwargs):
     if output_file:
         with open(output_file, 'w') as output_file:
             for host in outdated_hosts:
-                output_file.write(f'{host}\n')
+                output_file.write(f'{host.address}\n')
     else:
         list_outdated_hosts(outdated_hosts)
 
