@@ -22,4 +22,3 @@ inventory:
       filters:
         status: active
         role: router
-  hostsFile: hosts.txt
