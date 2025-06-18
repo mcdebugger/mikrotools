@@ -10,18 +10,15 @@ def get_commands():
     ctx = click.get_current_context()
 
     if ctx.params['execute_command']:
-        commands = [ctx.params['execute_command']]
+        return [ctx.params['execute_command']]
     elif ctx.params['commands_file']:
-        commands = get_commands_from_file(ctx.params['commands_file'])
+        return get_commands_from_file(ctx.params['commands_file'])
     else:
-        commands = []
-    
-    return commands
+        return []
 
 def get_commands_from_file(filename):
     with open(filename) as commands_file:
-        commands = [command.rstrip() for command in commands_file]
-        return commands
+        return [command.rstrip() for command in commands_file]
 
 def get_hosts() -> list[InventoryItem]:
     ctx = click.get_current_context()
@@ -72,5 +69,4 @@ def get_hosts() -> list[InventoryItem]:
 
 def read_hosts_from_file(filename):
     with open(filename) as hostsfile:
-        hosts = [host.rstrip() for host in hostsfile if not host.startswith('#')]
-        return hosts
+        return [host.rstrip() for host in hostsfile if not host.startswith('#')]
