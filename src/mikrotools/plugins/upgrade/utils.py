@@ -9,6 +9,7 @@ from mikrotools.hoststools.models import MikrotikHost
 
 from mikrotools.cli.progress import Progress
 from mikrotools.hoststools.models import OperationType
+from mikrotools.inventory import InventoryItem
 from mikrotools.netapi import MikrotikManager, AsyncMikrotikManager
 from mikrotools.tools.colors import fcolors_256 as fcolors
 
@@ -82,16 +83,16 @@ def print_upgradable_hosts(upgradable_hosts: list[MikrotikHost], upgrade_type: U
 
 # Upgrade firmware
 
-async def get_host_if_firmware_upgradable(address) -> MikrotikHost | None:
-    async with AsyncMikrotikManager.async_session(address) as device:
+async def get_host_if_firmware_upgradable(item: InventoryItem) -> MikrotikHost | None:
+    async with AsyncMikrotikManager.async_session(item) as device:
         routerboard = await device.get_system_routerboard()
         
         if is_upgradable(routerboard.current_firmware, routerboard.upgrade_firmware):
-            return await get_mikrotik_host(address)
+            return await get_mikrotik_host(item)
         else:
             return None
 
-async def get_firmware_upgradable_hosts(addresses):
+async def get_firmware_upgradable_hosts(items: list[InventoryItem]):
     upgradable_hosts = []
     tasks = []
     addresses_with_error = []
@@ -105,9 +106,9 @@ async def get_firmware_upgradable_hosts(addresses):
     console.print('[grey27]Checking for hosts applicable for firmware upgrade...')
     
     with CheckUpgradableProgress(UpgradeType.FIRMWARE) as progress:
-        progress.update(counter, len(addresses), len(upgradable_hosts), offline, failed)
-        for address in addresses:
-            task = asyncio.create_task(get_host_if_firmware_upgradable(address), name=address)
+        progress.update(counter, len(items), len(upgradable_hosts), offline, failed)
+        for item in items:
+            task = asyncio.create_task(get_host_if_firmware_upgradable(item), name=item.address)
             tasks.append(task)
         
         async for completed_task in asyncio.as_completed(tasks):
@@ -125,15 +126,15 @@ async def get_firmware_upgradable_hosts(addresses):
             
             if host is not None:
                 upgradable_hosts.append(host)
-                progress.update(counter, len(addresses), len(upgradable_hosts), offline, failed, address=completed_task.get_name(), identity=host.identity)
+                progress.update(counter, len(items), len(upgradable_hosts), offline, failed, address=completed_task.get_name(), identity=host.identity)
             else:
-                progress.update(counter, len(addresses), len(upgradable_hosts), offline, failed, address=completed_task.get_name())
+                progress.update(counter, len(items), len(upgradable_hosts), offline, failed, address=completed_task.get_name())
     
     console.show_cursor()
     
     return upgradable_hosts, addresses_with_error
 
-async def upgrade_hosts_firmware_start(addresses):
+async def upgrade_hosts_firmware_start(items: list[InventoryItem]):
     """
     Starts the process of upgrading the firmware of the given hosts.
 
@@ -143,7 +144,7 @@ async def upgrade_hosts_firmware_start(addresses):
     Args:
         addresses (list[str]): A list of IP addresses or hostnames to check.
     """
-    upgradable_hosts, addresses_with_error = await get_firmware_upgradable_hosts(addresses)
+    upgradable_hosts, addresses_with_error = await get_firmware_upgradable_hosts(items)
     await upgrade_hosts_firmware_confirmation_prompt(upgradable_hosts, addresses_with_error)
 
 async def upgrade_hosts_firmware_confirmation_prompt(upgradable_hosts, addresses_with_error):
@@ -261,7 +262,7 @@ async def get_host_if_routeros_upgradable(address) -> MikrotikHost | None:
         else:
             return None
 
-async def get_routeros_upgradable_hosts(addresses) -> tuple[list[MikrotikHost], list[tuple[str, str]]]:
+async def get_routeros_upgradable_hosts(items: list[InventoryItem]) -> tuple[list[MikrotikHost], list[tuple[str, str]]]:
     tasks: list[asyncio.Task] = []
     upgradable_hosts: list[MikrotikHost] = []
     addresses_with_error: list[tuple[str, str]] = []
@@ -274,12 +275,12 @@ async def get_routeros_upgradable_hosts(addresses) -> tuple[list[MikrotikHost], 
     console.show_cursor(False)
     console.print('[grey27]Checking for hosts applicable for RouterOS upgrade...')
     
-    for address in addresses:
-        task = asyncio.create_task(get_host_if_routeros_upgradable(address), name=address)
+    for item in items:
+        task = asyncio.create_task(get_host_if_routeros_upgradable(item), name=item.address)
         tasks.append(task)
     
     with CheckUpgradableProgress(UpgradeType.ROUTEROS) as progress:
-        progress.update(counter, len(addresses), len(upgradable_hosts), offline, failed)
+        progress.update(counter, len(items), len(upgradable_hosts), offline, failed)
         async for completed_task in asyncio.as_completed(tasks):
             counter += 1
             try:
@@ -295,9 +296,9 @@ async def get_routeros_upgradable_hosts(addresses) -> tuple[list[MikrotikHost], 
             
             if host is not None:
                 upgradable_hosts.append(host)
-                progress.update(counter, len(addresses), len(upgradable_hosts), offline, failed, address=completed_task.get_name(), identity=host.identity)
+                progress.update(counter, len(items), len(upgradable_hosts), offline, failed, address=completed_task.get_name(), identity=host.identity)
             else:
-                progress.update(counter, len(addresses), len(upgradable_hosts), offline, failed, address=completed_task.get_name())
+                progress.update(counter, len(items), len(upgradable_hosts), offline, failed, address=completed_task.get_name())
     
     console.show_cursor()
     
@@ -305,7 +306,7 @@ async def get_routeros_upgradable_hosts(addresses) -> tuple[list[MikrotikHost], 
     
     return upgradable_hosts, addresses_with_error
 
-async def upgrade_hosts_routeros_start(addresses: list[str]) -> None:
+async def upgrade_hosts_routeros_start(items: list[InventoryItem]) -> None:
     """
     Starts the process of upgrading RouterOS on the given hosts.
 
@@ -315,7 +316,7 @@ async def upgrade_hosts_routeros_start(addresses: list[str]) -> None:
     Args:
         addresses (list[str]): A list of IP addresses or hostnames to check.
     """
-    upgradable_hosts, addresses_with_error = await get_routeros_upgradable_hosts(addresses)
+    upgradable_hosts, addresses_with_error = await get_routeros_upgradable_hosts(items)
     await upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts, addresses_with_error)
 
 async def upgrade_hosts_routeros_confirmation_prompt(upgradable_hosts: list[MikrotikHost], addresses_with_error: list[tuple[str, str]]) -> None:
@@ -414,7 +415,7 @@ async def upgrade_host_routeros(host: MikrotikHost) -> MikrotikHost:
     
     return host
 
-def get_outdated_hosts(hosts, min_version, filtered_version):
+def get_outdated_hosts(hosts: list[InventoryItem], min_version: str, filtered_version: str | None = None) -> list[InventoryItem]:
 
     """
     Checks the installed version of each host in the given list against the minimum
@@ -435,7 +436,7 @@ def get_outdated_hosts(hosts, min_version, filtered_version):
     offline = 0
     outdated_hosts = []
     for host in hosts:
-        print_outdated_progress(host, counter, len(hosts), len(outdated_hosts), offline)
+        print_outdated_progress(host.address, counter, len(hosts), len(outdated_hosts), offline)
 
         try:
             with MikrotikManager.session(host) as device:
@@ -482,4 +483,4 @@ def check_if_update_applicable(installed_version, min_version, filtered_version=
 
 def list_outdated_hosts(hosts):
     for host in hosts:
-        print(f'{host}')
+        print(f'{host.address}')

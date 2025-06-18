@@ -3,10 +3,11 @@ import asyncio
 from datetime import datetime
 from rich.console import Console
 
+from mikrotools.inventory import InventoryItem
 from mikrotools.netapi import AsyncMikrotikManager
 
-async def execute_host_commands(address: str, commands: list[str]) -> tuple[str, str, datetime, list[tuple[str, str]]]:
-    async with AsyncMikrotikManager.async_session(address) as device:
+async def execute_host_commands(host: InventoryItem, commands: list[str]) -> tuple[str, str, datetime, list[tuple[str, str]]]:
+    async with AsyncMikrotikManager.async_session(host) as device:
         identity = await device.get_identity()
         routeros_installed_version = await device.get_routeros_installed_version()
         results: list[tuple[str, str]] = []
@@ -24,7 +25,7 @@ async def execute_host_commands(address: str, commands: list[str]) -> tuple[str,
         )
     )
 
-async def execute_hosts_commands(addresses: list[str], commands: list[str]) -> None:
+async def execute_hosts_commands(hosts: list[InventoryItem], commands: list[str]) -> None:
     tasks: list[asyncio.Task] = []
     
     console = Console()
@@ -32,9 +33,9 @@ async def execute_hosts_commands(addresses: list[str], commands: list[str]) -> N
     
     tasks.extend(
         asyncio.create_task(
-            execute_host_commands(address, commands), name=address
+            execute_host_commands(host, commands), name=host.address
         )
-        for address in addresses
+        for host in hosts
     )
     async for task in asyncio.as_completed(tasks):
         try:
