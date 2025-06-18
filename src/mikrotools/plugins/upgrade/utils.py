@@ -238,14 +238,14 @@ async def upgrade_hosts_firmware_apply(hosts: list[MikrotikHost]) -> None:
         else:
             console.print('[bold yellow]Invalid input. Please enter "y" or "n".')
 
-async def upgrade_host_firmware(host):
+async def upgrade_host_firmware(host: MikrotikHost) -> MikrotikHost | None:
     """
     Upgrades the firmware of the specified host.
 
     :param host: A MikrotikHost object representing the host to upgrade.
     :return: None
     """
-    async with AsyncMikrotikManager.async_session(host.address) as device:
+    async with AsyncMikrotikManager.async_session(InventoryItem(address=host.address)) as device:
         await device.execute_command_raw('/system routerboard upgrade')
 
     return host
@@ -409,7 +409,7 @@ async def upgrade_host_routeros(host: MikrotikHost) -> MikrotikHost:
     Returns:
         MikrotikHost: The updated MikrotikHost object.
     """
-    async with AsyncMikrotikManager.async_session(host.address) as device:
+    async with AsyncMikrotikManager.async_session(InventoryItem(address=host.address)) as device:
         await device.execute_command_raw('/system package update check-for-updates')
         await device.execute_command_raw('/system package update install')
     
