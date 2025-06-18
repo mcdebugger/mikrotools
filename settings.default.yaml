@@ -8,4 +8,18 @@ ssh:
     user: admin
     keyfile: mykey_id_ecdsa
 inventory:
+  sources:
+    - type: file
+      path: ./hosts.txt
+      format: text
+    - type: static
+      hosts:
+        - 192.168.0.1
+        - 192.168.0.2
+    - type: netbox
+      url: https://netbox.example.com
+      token: mytoken
+      filters:
+        status: active
+        role: router
   hostsFile: hosts.txt
